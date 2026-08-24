@@ -1,0 +1,2260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cookie JSON 工作台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --ink: #19202a;
+      --muted: #667085;
+      --line: #d9dee7;
+      --line-strong: #b7c0cf;
+      --primary: #1967d2;
+      --primary-dark: #1557b0;
+      --green: #16845b;
+      --amber: #a15c00;
+      --red: #b42318;
+      --shadow: 0 12px 30px rgba(24, 32, 42, 0.08);
+      --radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      width: min(1360px, calc(100vw - 32px));
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #1967d2;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .status-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #1849a9;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill.neutral {
+      background: #f2f4f7;
+      color: #475467;
+    }
+
+    .main {
+      width: min(1360px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .panel-caption {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    .left-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .drop-zone {
+      border: 1.5px dashed var(--line-strong);
+      border-radius: var(--radius);
+      min-height: 166px;
+      padding: 18px;
+      background: #fbfcfe;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--primary);
+      background: #f0f6ff;
+      transform: translateY(-1px);
+    }
+
+    .drop-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #e8f1ff;
+      color: var(--primary);
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .drop-zone strong {
+      font-size: 14px;
+    }
+
+    .drop-zone span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .drop-zone input {
+      display: none;
+    }
+
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .format-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      min-height: 40px;
+      padding: 8px 10px;
+      display: grid;
+      align-content: center;
+      gap: 2px;
+    }
+
+    .format-chip strong {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .format-chip span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .paste-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .paste-box textarea {
+      width: 100%;
+      min-height: 162px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+      line-height: 1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+
+    .paste-box textarea:focus,
+    .search-input:focus,
+    .select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(25, 103, 210, 0.14);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .toolbar.spread {
+      justify-content: space-between;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 8px 13px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #eef2f6;
+      color: #26313f;
+    }
+
+    .btn-secondary:hover {
+      background: #e1e7ef;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .btn-ghost:hover {
+      color: var(--ink);
+      border-color: var(--line-strong);
+      background: #f8fafc;
+    }
+
+    .btn-danger {
+      background: #fff1f0;
+      color: var(--red);
+    }
+
+    .btn-danger:hover {
+      background: #ffe4e0;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      display: inline-grid;
+      place-items: center;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .settings {
+      display: grid;
+      gap: 12px;
+    }
+
+    .setting-row {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .setting-label {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .setting-label strong {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .setting-label span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .switch {
+      position: relative;
+      width: 46px;
+      height: 26px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      background: #cdd5df;
+      transition: background-color 0.16s ease;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+      transition: transform 0.16s ease;
+    }
+
+    .switch input:checked + .slider {
+      background: var(--primary);
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(20px);
+    }
+
+    .select {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 34px 7px 10px;
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+      font-size: 13px;
+      max-width: 190px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 82px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      padding: 12px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .file-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      max-height: 272px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .file-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      min-height: 58px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .file-main {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .file-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #f2f4f7;
+      color: #475467;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .file-badge.good {
+      background: #e8f6ef;
+      color: var(--green);
+    }
+
+    .file-badge.warn {
+      background: #fff7e6;
+      color: var(--amber);
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      background: #f2f4f7;
+      color: #475467;
+      font-weight: 900;
+    }
+
+    .icon-button:hover {
+      background: #ffe4e0;
+      color: var(--red);
+    }
+
+    .tabs {
+      display: inline-flex;
+      background: #eef2f6;
+      border-radius: 8px;
+      padding: 3px;
+      min-height: 38px;
+    }
+
+    .tab {
+      border-radius: 6px;
+      padding: 7px 12px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      min-width: 74px;
+    }
+
+    .tab.active {
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .search-input {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      outline: none;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .db-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .db-list {
+      display: grid;
+      gap: 8px;
+      max-height: 330px;
+      overflow: auto;
+    }
+
+    .db-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .db-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .db-title {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .db-title strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .db-title span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .db-item-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .db-empty {
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      min-height: 86px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.45;
+      background: #fbfcfe;
+    }
+
+    .table-wrap {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      max-height: 560px;
+      background: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+      font-size: 12px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      box-shadow: 0 1px 0 var(--line);
+    }
+
+    th,
+    td {
+      text-align: left;
+      border-bottom: 1px solid #eef1f5;
+      padding: 10px 12px;
+      vertical-align: top;
+    }
+
+    th {
+      color: #475467;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    tbody tr:hover {
+      background: #fbfdff;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .col-id {
+      width: 92px;
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .col-name {
+      width: 128px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .col-cookie {
+      min-width: 360px;
+      max-width: 620px;
+    }
+
+    .cookie-text {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: #4b5565;
+    }
+
+    .col-source {
+      width: 172px;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      background: #fbfcfe;
+      color: var(--muted);
+      text-align: center;
+      padding: 28px;
+      line-height: 1.55;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+
+    .preview-pane {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #111827;
+      color: #d1d5db;
+      min-height: 420px;
+      max-height: 560px;
+      overflow: auto;
+    }
+
+    .preview-pane.active {
+      display: block;
+    }
+
+    .preview-pane pre {
+      margin: 0;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .log-list {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .log-list.active {
+      display: block;
+    }
+
+    .log-item {
+      padding: 11px 12px;
+      border-bottom: 1px solid #eef1f5;
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .log-item:last-child {
+      border-bottom: 0;
+    }
+
+    .log-item strong {
+      font-size: 12px;
+    }
+
+    .log-item span {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      top: 18px;
+      z-index: 30;
+      min-width: min(360px, calc(100vw - 36px));
+      max-width: 420px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #1f2937;
+      color: #ffffff;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.22);
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .topbar-inner {
+        min-height: 88px;
+        align-items: flex-start;
+        padding: 16px 0;
+        flex-direction: column;
+      }
+
+      .status-strip {
+        justify-content: flex-start;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar-inner,
+      .main {
+        width: min(100vw - 20px, 1360px);
+      }
+
+      .main {
+        padding-top: 12px;
+        gap: 12px;
+      }
+
+      .panel-header,
+      .toolbar.spread,
+      .search-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .panel-header {
+        display: grid;
+      }
+
+      .panel-body {
+        padding: 14px;
+      }
+
+      .format-grid,
+      .summary-grid,
+      .search-row {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .tab {
+        min-width: 0;
+      }
+
+      .toolbar .btn,
+      .toolbar .select {
+        width: 100%;
+      }
+
+      .db-item-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">CJ</div>
+          <div>
+            <h1>Cookie JSON 工作台</h1>
+            <p>本地解析、多格式导入、合并去重、导出标准 JSON</p>
+          </div>
+        </div>
+        <div class="status-strip">
+          <span class="pill">纯前端运行</span>
+          <span class="pill neutral">数据不上传</span>
+          <span class="pill neutral">单文件可部署</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <aside class="left-stack">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">导入文件</h2>
+              <p class="panel-caption">可一次拖入多个文件，自动识别格式。</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <label class="drop-zone" id="dropZone">
+              <span class="drop-icon">+</span>
+              <strong>点击选择或拖拽文件到这里</strong>
+              <span>支持 .txt .json .csv .tsv .har .cookies 等常见 cookie 数据</span>
+              <input id="fileInput" type="file" multiple accept=".txt,.json,.csv,.tsv,.har,.cookie,.cookies,.log,text/plain,application/json,text/csv">
+            </label>
+            <div class="format-grid" aria-label="支持格式">
+              <div class="format-chip"><strong>Cookie 文本</strong><span>每行一个、Cookie:、curl</span></div>
+              <div class="format-chip"><strong>JSON</strong><span>旧版结果、浏览器导出</span></div>
+              <div class="format-chip"><strong>CSV / TSV</strong><span>cookie 列或 name/value 列</span></div>
+              <div class="format-chip"><strong>HAR / Netscape</strong><span>抓包与 cookie jar</span></div>
+            </div>
+            <div class="file-list" id="fileList"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">粘贴导入</h2>
+              <p class="panel-caption">适合临时 cookie、curl 命令、JSON 片段。</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="paste-box">
+              <textarea id="pasteInput" spellcheck="false" placeholder="例如：&#10;aux_sid=xxx; locale=en_US&#10;Cookie: a=1; b=2&#10;curl 'https://example.com' -H 'cookie: a=1; b=2'"></textarea>
+              <div class="toolbar">
+                <button class="btn btn-primary" id="btnParsePaste" type="button"><span class="btn-icon">+</span>添加粘贴内容</button>
+                <button class="btn btn-ghost" id="btnClearPaste" type="button"><span class="btn-icon">x</span>清空粘贴</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">处理设置</h2>
+              <p class="panel-caption">影响合并后的记录和下载内容。</p>
+            </div>
+          </div>
+          <div class="panel-body settings">
+            <div class="setting-row">
+              <label class="setting-label" for="dedupeToggle">
+                <strong>自动去重</strong>
+                <span>相同 cookie 只保留第一次出现</span>
+              </label>
+              <label class="switch">
+                <input id="dedupeToggle" type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label" for="normalizeToggle">
+                <strong>规范化空格</strong>
+                <span>把分号附近的空白整理为统一格式</span>
+              </label>
+              <label class="switch">
+                <input id="normalizeToggle" type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label" for="metaToggle">
+                <strong>导出来源信息</strong>
+                <span>JSON 中附加 source / format / cookieCount</span>
+              </label>
+              <label class="switch">
+                <input id="metaToggle" type="checkbox">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label" for="nameMode">
+                <strong>命名方式</strong>
+                <span>控制输出 name 字段</span>
+              </label>
+              <select class="select" id="nameMode">
+                <option value="classic">cookie_序号</option>
+                <option value="source">来源_序号</option>
+                <option value="domain">域名优先</option>
+              </select>
+            </div>
+            <div class="toolbar">
+              <button class="btn btn-secondary" id="btnRebuild" type="button"><span class="btn-icon">↻</span>重新生成</button>
+              <button class="btn btn-danger" id="btnClearAll" type="button"><span class="btn-icon">x</span>清空全部</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">本地数据库</h2>
+              <p class="panel-caption">保存当前结果，之后可继续打开、导出或删除。</p>
+            </div>
+          </div>
+          <div class="panel-body db-actions">
+            <div class="toolbar">
+              <input class="search-input" id="dbNameInput" type="text" placeholder="保存名称，例如：8月会话">
+              <button class="btn btn-primary" id="btnSaveDb" type="button"><span class="btn-icon">+</span>保存当前结果</button>
+            </div>
+            <div class="toolbar">
+              <button class="btn btn-secondary" id="btnExportDb" type="button"><span class="btn-icon">↓</span>导出数据库</button>
+              <label class="btn btn-ghost" style="position:relative; overflow:hidden;">
+                <span class="btn-icon">↑</span>导入数据库
+                <input id="dbImportInput" type="file" accept="application/json" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+              </label>
+              <button class="btn btn-ghost" id="btnRefreshDb" type="button"><span class="btn-icon">↻</span>刷新列表</button>
+            </div>
+            <div class="db-list" id="dbList"></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">转换结果</h2>
+            <p class="panel-caption">输出默认兼容原工具的 id / name / cookie 数组。</p>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary" id="btnDownloadJson" type="button" disabled><span class="btn-icon">↓</span>下载 JSON</button>
+            <button class="btn btn-secondary" id="btnCopyJson" type="button" disabled><span class="btn-icon">⧉</span>复制 JSON</button>
+            <button class="btn btn-ghost" id="btnDownloadCsv" type="button" disabled>CSV</button>
+            <button class="btn btn-ghost" id="btnDownloadTxt" type="button" disabled>TXT</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="summary-grid">
+            <div class="metric"><span>有效记录</span><strong id="statTotal">0</strong></div>
+            <div class="metric"><span>导入来源</span><strong id="statSources">0</strong></div>
+            <div class="metric"><span>已去重</span><strong id="statDuplicates">0</strong></div>
+            <div class="metric"><span>筛选显示</span><strong id="statFiltered">0</strong></div>
+          </div>
+
+          <div class="search-row">
+            <input class="search-input" id="searchInput" type="search" placeholder="搜索 id / name / cookie / 来源 / 域名">
+            <div class="tabs" role="tablist" aria-label="结果视图">
+              <button class="tab active" type="button" data-view="table">表格</button>
+              <button class="tab" type="button" data-view="preview">JSON</button>
+              <button class="tab" type="button" data-view="log">日志</button>
+            </div>
+            <select class="select" id="filterSource">
+              <option value="">全部来源</option>
+            </select>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <div>
+              <strong>还没有导入数据</strong><br>
+              拖入文件或粘贴内容后，这里会显示可下载的 JSON 结果。
+            </div>
+          </div>
+
+          <div class="table-wrap" id="tableWrap" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-id">ID</th>
+                  <th class="col-name">Name</th>
+                  <th class="col-cookie">Cookie</th>
+                  <th class="col-source">来源</th>
+                  <th>数量</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="preview-pane" id="previewPane">
+            <pre id="jsonPreview"></pre>
+          </div>
+
+          <div class="log-list" id="logList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const state = {
+      sources: [],
+      output: [],
+      filtered: [],
+      duplicateCount: 0,
+      activeView: 'table',
+      logs: [],
+      savedSets: []
+    };
+
+    const els = {
+      dropZone: document.getElementById('dropZone'),
+      fileInput: document.getElementById('fileInput'),
+      fileList: document.getElementById('fileList'),
+      pasteInput: document.getElementById('pasteInput'),
+      btnParsePaste: document.getElementById('btnParsePaste'),
+      btnClearPaste: document.getElementById('btnClearPaste'),
+      btnRebuild: document.getElementById('btnRebuild'),
+      btnClearAll: document.getElementById('btnClearAll'),
+      btnDownloadJson: document.getElementById('btnDownloadJson'),
+      btnCopyJson: document.getElementById('btnCopyJson'),
+      btnDownloadCsv: document.getElementById('btnDownloadCsv'),
+      btnDownloadTxt: document.getElementById('btnDownloadTxt'),
+      btnSaveDb: document.getElementById('btnSaveDb'),
+      btnExportDb: document.getElementById('btnExportDb'),
+      btnRefreshDb: document.getElementById('btnRefreshDb'),
+      dbNameInput: document.getElementById('dbNameInput'),
+      dbImportInput: document.getElementById('dbImportInput'),
+      dbList: document.getElementById('dbList'),
+      dedupeToggle: document.getElementById('dedupeToggle'),
+      normalizeToggle: document.getElementById('normalizeToggle'),
+      metaToggle: document.getElementById('metaToggle'),
+      nameMode: document.getElementById('nameMode'),
+      statTotal: document.getElementById('statTotal'),
+      statSources: document.getElementById('statSources'),
+      statDuplicates: document.getElementById('statDuplicates'),
+      statFiltered: document.getElementById('statFiltered'),
+      searchInput: document.getElementById('searchInput'),
+      filterSource: document.getElementById('filterSource'),
+      emptyState: document.getElementById('emptyState'),
+      tableWrap: document.getElementById('tableWrap'),
+      tableBody: document.getElementById('tableBody'),
+      previewPane: document.getElementById('previewPane'),
+      jsonPreview: document.getElementById('jsonPreview'),
+      logList: document.getElementById('logList'),
+      toast: document.getElementById('toast')
+    };
+
+    const COOKIE_HEADER_RE = /\bcookie\s*:\s*([^\r\n'"]+)/ig;
+    const CURL_COOKIE_RE = /(?:-H|--header)\s+(['"])(?:cookie|Cookie)\s*:\s*([\s\S]*?)\1/g;
+    const DB_NAME = 'cookie-json-workbench-db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'datasets';
+    let dbPromise = null;
+
+    function openDatabase() {
+      if (dbPromise) return dbPromise;
+      if (!('indexedDB' in window)) {
+        dbPromise = Promise.reject(new Error('当前浏览器不支持 IndexedDB'));
+        return dbPromise;
+      }
+      dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            store.createIndex('updatedAt', 'updatedAt');
+            store.createIndex('name', 'name');
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('数据库打开失败'));
+      });
+      return dbPromise;
+    }
+
+    async function dbTransaction(mode, callback) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, mode);
+        const store = tx.objectStore(STORE_NAME);
+        let result;
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(tx.error || new Error('数据库操作失败'));
+        tx.onabort = () => reject(tx.error || new Error('数据库操作取消'));
+        result = callback(store);
+      });
+    }
+
+    function requestToPromise(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('数据库请求失败'));
+      });
+    }
+
+    async function dbGetAll() {
+      const items = await dbTransaction('readonly', store => requestToPromise(store.getAll()));
+      return items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    }
+
+    async function dbPut(item) {
+      await dbTransaction('readwrite', store => {
+        store.put(item);
+      });
+    }
+
+    async function dbDelete(id) {
+      await dbTransaction('readwrite', store => {
+        store.delete(id);
+      });
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => els.toast.classList.remove('show'), 2400);
+    }
+
+    function addLog(title, detail) {
+      state.logs.unshift({
+        title,
+        detail,
+        time: new Date().toLocaleTimeString()
+      });
+      state.logs = state.logs.slice(0, 80);
+      renderLogs();
+    }
+
+    function uid() {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function normalizeCookie(cookie) {
+      return String(cookie || '')
+        .replace(/\r?\n/g, ' ')
+        .replace(/\s*;\s*/g, '; ')
+        .replace(/\s+/g, ' ')
+        .replace(/;\s*$/g, '')
+        .trim();
+    }
+
+    function cleanCookie(cookie) {
+      let value = String(cookie || '').trim();
+      value = value.replace(/^Cookie\s*:\s*/i, '').trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1).trim();
+      }
+      return els.normalizeToggle.checked ? normalizeCookie(value) : value;
+    }
+
+    function looksLikeCookie(value) {
+      const text = String(value || '').trim();
+      if (!text || text.length < 3) return false;
+      if (/^(GET|POST|PUT|DELETE|PATCH|HTTP)\b/i.test(text)) return false;
+      if (/^[\\[{]/.test(text)) return false;
+      return /(^|;\s*)[^=;\s]{1,128}=/.test(text);
+    }
+
+    function cookiePartCount(cookie) {
+      const parts = String(cookie || '').split(';').map(item => item.trim()).filter(Boolean);
+      return Math.max(parts.length, looksLikeCookie(cookie) ? 1 : 0);
+    }
+
+    function getHostnameFromUrl(url) {
+      try {
+        return new URL(url).hostname || '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function baseName(name) {
+      return String(name || 'paste')
+        .replace(/\.[^.]+$/g, '')
+        .replace(/[^\w\u4e00-\u9fa5-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 42) || 'cookie';
+    }
+
+    function safeName(text) {
+      return String(text || 'cookie')
+        .replace(/^\.+/g, '')
+        .replace(/[^\w\u4e00-\u9fa5.-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 52) || 'cookie';
+    }
+
+    function makeRecord(cookie, meta) {
+      const clean = cleanCookie(cookie);
+      if (!looksLikeCookie(clean)) return null;
+      return {
+        cookie: clean,
+        source: meta.source || '未知来源',
+        format: meta.format || '文本',
+        domain: meta.domain || '',
+        rawName: meta.name || '',
+        cookieCount: cookiePartCount(clean)
+      };
+    }
+
+    function recordsFromCookieStrings(list, meta) {
+      return list
+        .map(item => makeRecord(item, meta))
+        .filter(Boolean);
+    }
+
+    function parseTextContent(text, fileName) {
+      const trimmed = String(text || '').replace(/^\uFEFF/, '').trim();
+      if (!trimmed) return { format: '空文件', records: [], warnings: ['内容为空'] };
+
+      const netscape = parseNetscape(trimmed, fileName);
+      if (netscape.records.length) return netscape;
+
+      const extracted = [];
+      let match;
+      while ((match = CURL_COOKIE_RE.exec(trimmed))) {
+        extracted.push(match[2]);
+      }
+      while ((match = COOKIE_HEADER_RE.exec(trimmed))) {
+        extracted.push(match[1]);
+      }
+
+      if (extracted.length) {
+        return {
+          format: 'Cookie Header',
+          records: recordsFromCookieStrings(extracted, { source: fileName, format: 'Cookie Header' }),
+          warnings: []
+        };
+      }
+
+      const lines = trimmed.split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
+
+      const cookieLines = lines
+        .map(line => line.replace(/^Cookie\s*:\s*/i, '').trim())
+        .filter(looksLikeCookie);
+
+      return {
+        format: 'Cookie 文本',
+        records: recordsFromCookieStrings(cookieLines, { source: fileName, format: 'Cookie 文本' }),
+        warnings: cookieLines.length === lines.length ? [] : [`跳过 ${lines.length - cookieLines.length} 行非 cookie 内容`]
+      };
+    }
+
+    function parseNetscape(text, fileName) {
+      const groups = new Map();
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      let validRows = 0;
+
+      lines.forEach(line => {
+        if (line.startsWith('#HttpOnly_')) line = line.replace('#HttpOnly_', '');
+        if (line.startsWith('#')) return;
+        const cols = line.split(/\t+/);
+        if (cols.length < 7) return;
+        const domain = cols[0].trim();
+        const name = cols[5].trim();
+        const value = cols.slice(6).join('\t').trim();
+        if (!name) return;
+        validRows += 1;
+        const key = domain || fileName;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(`${name}=${value}`);
+      });
+
+      if (!validRows) return { format: 'Netscape Cookie', records: [], warnings: [] };
+
+      const records = Array.from(groups.entries())
+        .flatMap(([domain, pairs]) => pairs.map(pair => makeRecord(pair, {
+          source: fileName,
+          format: 'Netscape Cookie',
+          domain
+        })))
+        .filter(Boolean);
+
+      return {
+        format: 'Netscape Cookie',
+        records,
+        warnings: records.length ? [] : ['识别到 Netscape 行，但没有有效 cookie']
+      };
+    }
+
+    function parseJsonContent(text, fileName) {
+      const data = JSON.parse(text);
+      const records = [];
+      const warnings = [];
+
+      const harRecords = parseHar(data, fileName);
+      if (harRecords.length) {
+        return { format: 'HAR', records: harRecords, warnings };
+      }
+
+      const candidates = normalizeJsonCandidates(data);
+      if (!candidates.length) {
+        return { format: 'JSON', records: [], warnings: ['JSON 中没有找到 cookie 字段或 name/value 结构'] };
+      }
+
+      const cookieStrings = [];
+      const cookieObjects = [];
+
+      candidates.forEach(item => {
+        if (typeof item === 'string') {
+          if (looksLikeCookie(item)) cookieStrings.push(item);
+          return;
+        }
+        if (!item || typeof item !== 'object') return;
+        const direct = item.cookie || item.Cookie || item.cookieString || item.cookie_header || item.header || item.valueString;
+        if (typeof direct === 'string' && looksLikeCookie(direct)) {
+          cookieStrings.push(direct);
+          return;
+        }
+        const name = item.name || item.key || item.Name;
+        const value = item.value || item.Value;
+        if (name !== undefined && value !== undefined) {
+          cookieObjects.push({
+            name: String(name),
+            value: String(value),
+            domain: item.domain || item.host || item.url || item.Domain || ''
+          });
+        }
+      });
+
+      records.push(...recordsFromCookieStrings(cookieStrings, { source: fileName, format: 'JSON' }));
+      records.push(...recordsFromCookieObjects(cookieObjects, fileName, 'JSON Cookie 对象'));
+
+      if (!records.length) warnings.push('JSON 已读取，但未找到可转换的 cookie');
+      return { format: cookieObjects.length && !cookieStrings.length ? 'JSON Cookie 对象' : 'JSON', records, warnings };
+    }
+
+    function normalizeJsonCandidates(data) {
+      if (Array.isArray(data)) return data;
+      if (data && typeof data === 'object') {
+        const keys = ['cookies', 'cookie', 'data', 'items', 'records', 'results', 'log'];
+        for (const key of keys) {
+          if (Array.isArray(data[key])) return data[key];
+        }
+        if (data.request || data.response) return [data];
+        return [data];
+      }
+      if (typeof data === 'string') return [data];
+      return [];
+    }
+
+    function parseHar(data, fileName) {
+      const entries = data && data.log && Array.isArray(data.log.entries) ? data.log.entries : [];
+      if (!entries.length) return [];
+      const found = [];
+      const seen = new Set();
+
+      entries.forEach((entry, index) => {
+        const host = getHostnameFromUrl(entry.request && entry.request.url) || `request_${index + 1}`;
+        const headers = (entry.request && entry.request.headers) || [];
+        headers.forEach(header => {
+          if (header && /^cookie$/i.test(header.name || '') && looksLikeCookie(header.value || '')) {
+            const value = cleanCookie(header.value);
+            if (!seen.has(value)) {
+              seen.add(value);
+              found.push(makeRecord(value, { source: fileName, format: 'HAR Request', domain: host }));
+            }
+          }
+        });
+
+        const responseCookies = entry.response && Array.isArray(entry.response.cookies) ? entry.response.cookies : [];
+        const responsePairs = responseCookies
+          .filter(cookie => cookie && cookie.name)
+          .map(cookie => `${cookie.name}=${cookie.value || ''}`);
+        if (responsePairs.length) {
+          const value = cleanCookie(responsePairs.join('; '));
+          if (!seen.has(value)) {
+            seen.add(value);
+            found.push(makeRecord(value, { source: fileName, format: 'HAR Response', domain: host }));
+          }
+        }
+      });
+
+      return found.filter(Boolean);
+    }
+
+    function recordsFromCookieObjects(items, fileName, format) {
+      if (!items.length) return [];
+      return items
+        .map(item => makeRecord(`${item.name}=${item.value}`, {
+          source: fileName,
+          format,
+          domain: String(item.domain || '').replace(/^https?:\/\//i, '').split('/')[0] || fileName
+        }))
+        .filter(Boolean);
+    }
+
+    function parseDelimitedContent(text, fileName, delimiter) {
+      const rows = parseDelimitedRows(text, delimiter);
+      if (!rows.length) return { format: delimiter === '\t' ? 'TSV' : 'CSV', records: [], warnings: ['内容为空'] };
+
+      const header = rows[0].map(cell => cell.trim().toLowerCase());
+      const hasHeader = header.some(cell => ['cookie', 'cookies', 'name', 'key', 'value', 'domain', 'host'].includes(cell));
+      const dataRows = hasHeader ? rows.slice(1) : rows;
+      const idx = name => header.indexOf(name);
+      const cookieIdx = ['cookie', 'cookies', 'cookie_string', 'cookie header'].map(idx).find(i => i >= 0);
+      const nameIdx = ['name', 'key'].map(idx).find(i => i >= 0);
+      const valueIdx = ['value'].map(idx).find(i => i >= 0);
+      const domainIdx = ['domain', 'host'].map(idx).find(i => i >= 0);
+      const sourceIdx = ['source', 'file'].map(idx).find(i => i >= 0);
+      const records = [];
+
+      if (hasHeader && cookieIdx >= 0) {
+        dataRows.forEach(row => {
+          const cookie = row[cookieIdx] || '';
+          const source = sourceIdx >= 0 && row[sourceIdx] ? row[sourceIdx] : fileName;
+          const rec = makeRecord(cookie, {
+            source,
+            format: delimiter === '\t' ? 'TSV Cookie 列' : 'CSV Cookie 列'
+          });
+          if (rec) records.push(rec);
+        });
+        return {
+          format: delimiter === '\t' ? 'TSV' : 'CSV',
+          records,
+          warnings: []
+        };
+      }
+
+      if (hasHeader && nameIdx >= 0 && valueIdx >= 0) {
+        const objects = dataRows
+          .filter(row => row[nameIdx])
+          .map(row => ({
+            name: row[nameIdx],
+            value: row[valueIdx] || '',
+            domain: domainIdx >= 0 ? row[domainIdx] : ''
+          }));
+        return {
+          format: delimiter === '\t' ? 'TSV Cookie 对象' : 'CSV Cookie 对象',
+          records: recordsFromCookieObjects(objects, fileName, delimiter === '\t' ? 'TSV Cookie 对象' : 'CSV Cookie 对象'),
+          warnings: []
+        };
+      }
+
+      const rawRecords = dataRows
+        .map(row => row.join(delimiter).trim())
+        .filter(looksLikeCookie);
+      return {
+        format: delimiter === '\t' ? 'TSV 文本' : 'CSV 文本',
+        records: recordsFromCookieStrings(rawRecords, { source: fileName, format: delimiter === '\t' ? 'TSV 文本' : 'CSV 文本' }),
+        warnings: rawRecords.length ? [] : ['没有识别到 cookie 列或 name/value 列']
+      };
+    }
+
+    function parseDelimitedRows(text, delimiter) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let quote = false;
+      const input = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+      for (let i = 0; i < input.length; i += 1) {
+        const ch = input[i];
+        if (ch === '"') {
+          if (quote && input[i + 1] === '"') {
+            cell += '"';
+            i += 1;
+          } else {
+            quote = !quote;
+          }
+        } else if (ch === delimiter && !quote) {
+          row.push(cell);
+          cell = '';
+        } else if (ch === '\n' && !quote) {
+          row.push(cell);
+          if (row.some(value => value.trim())) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += ch;
+        }
+      }
+      row.push(cell);
+      if (row.some(value => value.trim())) rows.push(row);
+      return rows;
+    }
+
+    function parseAny(text, fileName) {
+      const ext = String(fileName || '').toLowerCase().split('.').pop();
+      const trimmed = String(text || '').replace(/^\uFEFF/, '').trim();
+      if (!trimmed) return { format: '空文件', records: [], warnings: ['内容为空'] };
+
+      if (ext === 'json' || ext === 'har' || /^[\[{]/.test(trimmed)) {
+        try {
+          return parseJsonContent(trimmed, fileName);
+        } catch (error) {
+          if (ext === 'json' || ext === 'har') {
+            return { format: 'JSON', records: [], warnings: [`JSON 解析失败：${error.message}`] };
+          }
+        }
+      }
+
+      if (ext === 'csv') return parseDelimitedContent(trimmed, fileName, ',');
+      if (ext === 'tsv') return parseDelimitedContent(trimmed, fileName, '\t');
+
+      const firstLines = trimmed.split(/\r?\n/).slice(0, 8).join('\n');
+      if (firstLines.includes('\t') && /(^|\t)(name|value|domain|cookie)(\t|$)/i.test(firstLines)) {
+        return parseDelimitedContent(trimmed, fileName, '\t');
+      }
+      if (firstLines.includes(',') && /(^|,)(name|value|domain|cookie)(,|$)/i.test(firstLines)) {
+        return parseDelimitedContent(trimmed, fileName, ',');
+      }
+
+      return parseTextContent(trimmed, fileName);
+    }
+
+    async function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('读取失败'));
+        reader.readAsText(file, 'utf-8');
+      });
+    }
+
+    async function handleFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+      let added = 0;
+
+      for (const file of files) {
+        try {
+          const text = await readFileAsText(file);
+          const parsed = parseAny(text, file.name);
+          addSource({
+            id: uid(),
+            name: file.name,
+            size: file.size,
+            format: parsed.format,
+            records: parsed.records,
+            warnings: parsed.warnings || []
+          });
+          added += parsed.records.length;
+        } catch (error) {
+          addLog(`读取失败：${file.name}`, error.message || String(error));
+        }
+      }
+
+      rebuildOutput();
+      showToast(`已导入 ${files.length} 个文件，识别 ${added} 条记录`);
+      els.fileInput.value = '';
+    }
+
+    function addSource(source) {
+      state.sources.push(source);
+      const warnText = source.warnings && source.warnings.length ? `；${source.warnings.join('；')}` : '';
+      addLog(`导入：${source.name}`, `${source.format}，${source.records.length} 条${warnText}`);
+    }
+
+    function addPaste() {
+      const text = els.pasteInput.value.trim();
+      if (!text) {
+        showToast('粘贴区是空的');
+        return;
+      }
+      const name = `粘贴_${new Date().toLocaleString().replace(/[/:\s]/g, '_')}`;
+      const parsed = parseAny(text, name);
+      addSource({
+        id: uid(),
+        name,
+        size: text.length,
+        format: parsed.format,
+        records: parsed.records,
+        warnings: parsed.warnings || []
+      });
+      rebuildOutput();
+      showToast(`粘贴内容已添加，识别 ${parsed.records.length} 条记录`);
+    }
+
+    function rebuildOutput() {
+      const dedupe = els.dedupeToggle.checked;
+      const seen = new Set();
+      const output = [];
+      let duplicates = 0;
+
+      state.sources.forEach(source => {
+        source.records.forEach(record => {
+          const cookie = cleanCookie(record.cookie);
+          if (!looksLikeCookie(cookie)) return;
+          const key = normalizeCookie(cookie).toLowerCase();
+          if (dedupe && seen.has(key)) {
+            duplicates += 1;
+            return;
+          }
+          seen.add(key);
+          output.push({
+            ...record,
+            cookie,
+            sourceId: source.id,
+            source: source.name,
+            sourceFormat: record.format || source.format,
+            sourceBase: baseName(source.name),
+            cookieCount: cookiePartCount(cookie)
+          });
+        });
+      });
+
+      state.duplicateCount = duplicates;
+      state.output = output.map((record, index) => formatOutputRecord(record, index + 1));
+      applyFilters();
+      renderFiles();
+      renderSourceFilter();
+      renderSummary();
+      renderPreview();
+      renderLogs();
+      setDownloadState();
+    }
+
+    function formatOutputRecord(record, number) {
+      const id = String(number).padStart(7, '0');
+      const mode = els.nameMode.value;
+      let name = `cookie_${number}`;
+      if (mode === 'source') name = `${record.sourceBase}_${number}`;
+      if (mode === 'domain' && record.domain) name = safeName(record.domain);
+      if (mode === 'domain' && !record.domain) name = `${record.sourceBase}_${number}`;
+
+      const base = {
+        id,
+        name,
+        cookie: record.cookie
+      };
+
+      if (els.metaToggle.checked) {
+        base.source = record.source;
+        base.format = record.sourceFormat;
+        base.domain = record.domain || '';
+        base.cookieCount = record.cookieCount;
+      }
+
+      return {
+        ...base,
+        _meta: {
+          source: record.source,
+          format: record.sourceFormat,
+          domain: record.domain || '',
+          cookieCount: record.cookieCount
+        }
+      };
+    }
+
+    function publicRecords(records = state.output) {
+      return records.map(record => {
+        const copy = { ...record };
+        delete copy._meta;
+        return copy;
+      });
+    }
+
+    function applyFilters() {
+      const query = els.searchInput.value.trim().toLowerCase();
+      const sourceId = els.filterSource.value;
+      state.filtered = state.output.filter(record => {
+        const sourceMatch = !sourceId || record._meta.source === sourceId;
+        if (!sourceMatch) return false;
+        if (!query) return true;
+        return [
+          record.id,
+          record.name,
+          record.cookie,
+          record._meta.source,
+          record._meta.format,
+          record._meta.domain
+        ].some(value => String(value || '').toLowerCase().includes(query));
+      });
+      renderSummary();
+      renderTable();
+      renderPreview();
+    }
+
+    function renderFiles() {
+      els.fileList.innerHTML = '';
+      if (!state.sources.length) return;
+
+      state.sources.forEach(source => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        const warn = source.warnings && source.warnings.length;
+        item.innerHTML = `
+          <div class="file-main">
+            <div class="file-name" title="${escapeHtml(source.name)}">${escapeHtml(source.name)}</div>
+            <div class="file-meta">
+              <span class="file-badge good">${source.records.length} 条</span>
+              <span class="file-badge">${escapeHtml(source.format)}</span>
+              ${warn ? `<span class="file-badge warn">${source.warnings.length} 提醒</span>` : ''}
+            </div>
+          </div>
+          <button class="icon-button" type="button" title="移除此来源" data-remove-source="${source.id}">x</button>
+        `;
+        els.fileList.appendChild(item);
+      });
+
+      els.fileList.querySelectorAll('[data-remove-source]').forEach(button => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-remove-source');
+          const target = state.sources.find(source => source.id === id);
+          state.sources = state.sources.filter(source => source.id !== id);
+          addLog(`移除来源：${target ? target.name : id}`, '已从当前结果中移除');
+          rebuildOutput();
+        });
+      });
+    }
+
+    function renderSourceFilter() {
+      const current = els.filterSource.value;
+      els.filterSource.innerHTML = '<option value="">全部来源</option>';
+      state.sources.forEach(source => {
+        const option = document.createElement('option');
+        option.value = source.name;
+        option.textContent = source.name.length > 26 ? `${source.name.slice(0, 26)}...` : source.name;
+        els.filterSource.appendChild(option);
+      });
+      els.filterSource.value = Array.from(els.filterSource.options).some(option => option.value === current) ? current : '';
+    }
+
+    function renderSummary() {
+      els.statTotal.textContent = state.output.length;
+      els.statSources.textContent = state.sources.length;
+      els.statDuplicates.textContent = state.duplicateCount;
+      els.statFiltered.textContent = state.filtered.length;
+    }
+
+    function renderTable() {
+      const hasData = state.output.length > 0;
+      els.emptyState.hidden = hasData;
+      els.tableWrap.hidden = !hasData || state.activeView !== 'table';
+
+      if (!hasData || state.activeView !== 'table') return;
+      if (!state.filtered.length) {
+        els.tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#667085;padding:28px;">没有匹配的记录</td></tr>';
+        return;
+      }
+
+      const display = state.filtered.slice(0, 800);
+      els.tableBody.innerHTML = display.map(record => `
+        <tr>
+          <td class="col-id mono">${escapeHtml(record.id)}</td>
+          <td class="col-name">${escapeHtml(record.name)}</td>
+          <td class="col-cookie"><span class="cookie-text mono" title="${escapeHtml(record.cookie)}">${escapeHtml(record.cookie)}</span></td>
+          <td class="col-source">${escapeHtml(record._meta.source)}<br><span class="mono">${escapeHtml(record._meta.domain || record._meta.format)}</span></td>
+          <td class="mono">${record._meta.cookieCount}</td>
+        </tr>
+      `).join('');
+
+      if (state.filtered.length > display.length) {
+        els.tableBody.innerHTML += `<tr><td colspan="5" style="text-align:center;color:#667085;padding:14px;">仅显示前 ${display.length} 条，下载可获得完整结果</td></tr>`;
+      }
+    }
+
+    function renderPreview() {
+      const hasData = state.output.length > 0;
+      els.previewPane.classList.toggle('active', hasData && state.activeView === 'preview');
+      if (!hasData) {
+        els.previewPane.classList.remove('active');
+        els.jsonPreview.textContent = '';
+        return;
+      }
+      const previewRecords = publicRecords(state.filtered.length || els.searchInput.value || els.filterSource.value ? state.filtered : state.output);
+      els.jsonPreview.textContent = JSON.stringify(previewRecords.slice(0, 120), null, 2) +
+        (previewRecords.length > 120 ? `\n\n/* 预览仅显示前 120 条，共 ${previewRecords.length} 条 */` : '');
+    }
+
+    function renderLogs() {
+      els.logList.classList.toggle('active', state.activeView === 'log' && state.output.length > 0);
+      if (state.activeView !== 'log') return;
+      if (!state.logs.length) {
+        els.logList.innerHTML = '<div class="log-item"><strong>暂无日志</strong><span>导入后会显示解析情况。</span></div>';
+        return;
+      }
+      els.logList.innerHTML = state.logs.map(log => `
+        <div class="log-item">
+          <strong>${escapeHtml(log.title)}</strong>
+          <span>${escapeHtml(log.time)} · ${escapeHtml(log.detail)}</span>
+        </div>
+      `).join('');
+    }
+
+    function setDownloadState() {
+      const disabled = state.output.length === 0;
+      els.btnDownloadJson.disabled = disabled;
+      els.btnCopyJson.disabled = disabled;
+      els.btnDownloadCsv.disabled = disabled;
+      els.btnDownloadTxt.disabled = disabled;
+    }
+
+    function downloadBlob(content, fileName, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadJson() {
+      const data = JSON.stringify(publicRecords(), null, 2);
+      downloadBlob(data, `cookies_${state.output.length}.json`, 'application/json;charset=utf-8');
+      showToast('JSON 已开始下载');
+    }
+
+    async function copyJson() {
+      const data = JSON.stringify(publicRecords(), null, 2);
+      try {
+        await navigator.clipboard.writeText(data);
+        showToast('JSON 已复制');
+      } catch (_) {
+        showToast('浏览器限制了复制，请用下载 JSON');
+      }
+    }
+
+    function downloadCsv() {
+      const headers = els.metaToggle.checked
+        ? ['id', 'name', 'cookie', 'source', 'format', 'domain', 'cookieCount']
+        : ['id', 'name', 'cookie'];
+      const rows = publicRecords().map(record => headers.map(header => csvCell(record[header])));
+      downloadBlob([headers.join(','), ...rows.map(row => row.join(','))].join('\n'), `cookies_${state.output.length}.csv`, 'text/csv;charset=utf-8');
+      showToast('CSV 已开始下载');
+    }
+
+    function downloadTxt() {
+      downloadBlob(state.output.map(record => record.cookie).join('\n'), `cookies_${state.output.length}.txt`, 'text/plain;charset=utf-8');
+      showToast('TXT 已开始下载');
+    }
+
+    async function saveCurrentSet() {
+      if (!state.output.length) {
+        showToast('没有可保存的数据');
+        return;
+      }
+      const name = els.dbNameInput.value.trim() || `未命名_${new Date().toLocaleString().replace(/[/:\s]/g, '_')}`;
+      const item = {
+        id: uid(),
+        name,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        count: state.output.length,
+        sourceCount: state.sources.length,
+        settings: {
+          dedupe: els.dedupeToggle.checked,
+          normalize: els.normalizeToggle.checked,
+          meta: els.metaToggle.checked,
+          nameMode: els.nameMode.value
+        },
+        records: publicRecords(),
+        sources: state.sources.map(source => ({
+          name: source.name,
+          format: source.format,
+          count: source.records.length,
+          warnings: source.warnings || []
+        }))
+      };
+      await dbPut(item);
+      els.dbNameInput.value = '';
+      await refreshDbList();
+      showToast(`已保存到本地数据库：${name}`);
+    }
+
+    async function refreshDbList() {
+      try {
+        state.savedSets = await dbGetAll();
+      } catch (error) {
+        state.savedSets = [];
+        addLog('读取数据库失败', error.message || String(error));
+      }
+      renderDbList();
+    }
+
+    function renderDbList() {
+      els.dbList.innerHTML = '';
+      if (!state.savedSets.length) {
+        els.dbList.innerHTML = '<div class="db-empty">本地数据库还没有保存任何结果。<br>先保存一次导入数据，再从这里继续打开。</div>';
+        return;
+      }
+
+      state.savedSets.forEach(item => {
+        const node = document.createElement('div');
+        node.className = 'db-item';
+        node.innerHTML = `
+          <div class="db-item-head">
+            <div class="db-title">
+              <strong title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong>
+              <span>${escapeHtml(item.count)} 条 · ${escapeHtml(item.sourceCount)} 个来源 · ${escapeHtml(formatDate(item.updatedAt))}</span>
+            </div>
+            <span class="file-badge good">已保存</span>
+          </div>
+          <div class="db-item-actions">
+            <button class="btn btn-secondary" type="button" data-db-open="${item.id}">打开</button>
+            <button class="btn btn-ghost" type="button" data-db-export="${item.id}">导出</button>
+            <button class="btn btn-danger" type="button" data-db-delete="${item.id}">删除</button>
+          </div>
+        `;
+        els.dbList.appendChild(node);
+      });
+
+      els.dbList.querySelectorAll('[data-db-open]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const id = button.getAttribute('data-db-open');
+          const item = state.savedSets.find(entry => entry.id === id);
+          if (!item) return;
+          loadSavedSet(item);
+        });
+      });
+
+      els.dbList.querySelectorAll('[data-db-export]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const id = button.getAttribute('data-db-export');
+          const item = state.savedSets.find(entry => entry.id === id);
+          if (!item) return;
+          downloadBlob(JSON.stringify(item, null, 2), `${safeName(item.name)}.db.json`, 'application/json;charset=utf-8');
+          showToast('已导出数据库备份');
+        });
+      });
+
+      els.dbList.querySelectorAll('[data-db-delete]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const id = button.getAttribute('data-db-delete');
+          const item = state.savedSets.find(entry => entry.id === id);
+          if (!item) return;
+          await dbDelete(id);
+          addLog(`删除保存集：${item.name}`, '已从本地数据库移除');
+          await refreshDbList();
+          showToast('已删除保存集');
+        });
+      });
+    }
+
+    function loadSavedSet(item) {
+      state.sources = [{
+        id: uid(),
+        name: item.name,
+        size: item.count,
+        format: '本地数据库',
+        records: item.records.map(record => ({
+          cookie: record.cookie,
+          source: record.source || item.name,
+          format: record.format || '本地数据库',
+          domain: record.domain || '',
+          rawName: record.name || '',
+          cookieCount: record.cookieCount || cookiePartCount(record.cookie)
+        })),
+        warnings: []
+      }];
+      els.dedupeToggle.checked = item.settings?.dedupe ?? true;
+      els.normalizeToggle.checked = item.settings?.normalize ?? true;
+      els.metaToggle.checked = item.settings?.meta ?? false;
+      els.nameMode.value = item.settings?.nameMode || 'classic';
+      rebuildOutput();
+      showToast(`已打开：${item.name}`);
+    }
+
+    async function exportDatabaseBackup() {
+      const backup = {
+        version: DB_VERSION,
+        exportedAt: new Date().toISOString(),
+        datasets: state.savedSets
+      };
+      downloadBlob(JSON.stringify(backup, null, 2), `cookie_database_backup_${new Date().toISOString().slice(0,10)}.json`, 'application/json;charset=utf-8');
+      showToast('数据库备份已导出');
+    }
+
+    async function importDatabaseBackup(file) {
+      const text = await readFileAsText(file);
+      const data = JSON.parse(text);
+      const sets = Array.isArray(data?.datasets)
+        ? data.datasets
+        : Array.isArray(data)
+          ? data
+          : Array.isArray(data?.records)
+            ? [data]
+            : [];
+      if (!sets.length) throw new Error('备份里没有可导入的数据');
+      for (const item of sets) {
+        if (!item.id) item.id = uid();
+        await dbPut({
+          id: item.id,
+          name: item.name || '未命名',
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          count: item.count || (item.records ? item.records.length : 0),
+          sourceCount: item.sourceCount || (item.sources ? item.sources.length : 0),
+          settings: item.settings || {},
+          records: Array.isArray(item.records) ? item.records : [],
+          sources: Array.isArray(item.sources) ? item.sources : []
+        });
+      }
+      await refreshDbList();
+      showToast(`已导入 ${sets.length} 个保存集`);
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return d.toLocaleString();
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? '');
+      if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+      return text;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function clearAll() {
+      state.sources = [];
+      state.output = [];
+      state.filtered = [];
+      state.duplicateCount = 0;
+      state.logs = [];
+      els.searchInput.value = '';
+      els.filterSource.value = '';
+      els.pasteInput.value = '';
+      renderFiles();
+      renderSourceFilter();
+      renderSummary();
+      renderTable();
+      renderPreview();
+      renderLogs();
+      setDownloadState();
+      showToast('已清空');
+    }
+
+    els.dropZone.addEventListener('dragover', event => {
+      event.preventDefault();
+      els.dropZone.classList.add('dragover');
+    });
+
+    els.dropZone.addEventListener('dragleave', () => {
+      els.dropZone.classList.remove('dragover');
+    });
+
+    els.dropZone.addEventListener('drop', event => {
+      event.preventDefault();
+      els.dropZone.classList.remove('dragover');
+      handleFiles(event.dataTransfer.files);
+    });
+
+    els.fileInput.addEventListener('change', event => handleFiles(event.target.files));
+    els.btnParsePaste.addEventListener('click', addPaste);
+    els.btnClearPaste.addEventListener('click', () => {
+      els.pasteInput.value = '';
+      showToast('粘贴区已清空');
+    });
+    els.btnRebuild.addEventListener('click', () => {
+      rebuildOutput();
+      showToast('已重新生成结果');
+    });
+    els.btnClearAll.addEventListener('click', clearAll);
+    els.btnDownloadJson.addEventListener('click', downloadJson);
+    els.btnCopyJson.addEventListener('click', copyJson);
+    els.btnDownloadCsv.addEventListener('click', downloadCsv);
+    els.btnDownloadTxt.addEventListener('click', downloadTxt);
+    els.btnSaveDb.addEventListener('click', () => {
+      saveCurrentSet().catch(error => showToast(error.message || '保存失败'));
+    });
+    els.btnExportDb.addEventListener('click', () => {
+      exportDatabaseBackup().catch(error => showToast(error.message || '导出失败'));
+    });
+    els.btnRefreshDb.addEventListener('click', () => {
+      refreshDbList().catch(error => showToast(error.message || '刷新失败'));
+    });
+    els.dbImportInput.addEventListener('change', event => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      importDatabaseBackup(file).catch(error => showToast(error.message || '导入失败'));
+    });
+    els.searchInput.addEventListener('input', applyFilters);
+    els.filterSource.addEventListener('change', applyFilters);
+
+    [els.dedupeToggle, els.normalizeToggle, els.metaToggle, els.nameMode].forEach(input => {
+      input.addEventListener('change', rebuildOutput);
+    });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(item => item.classList.remove('active'));
+        tab.classList.add('active');
+        state.activeView = tab.dataset.view;
+        renderTable();
+        renderPreview();
+        renderLogs();
+      });
+    });
+
+    window.CookieJsonWorkbench = {
+      parseAny,
+      parseDelimitedRows,
+      normalizeCookie,
+      saveCurrentSet,
+      refreshDbList
+    };
+
+    renderSummary();
+    setDownloadState();
+    refreshDbList().catch(error => addLog('数据库初始化失败', error.message || String(error)));
+  </script>
+</body>
+</html>
