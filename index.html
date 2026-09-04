@@ -221,6 +221,7 @@
 
     .drop-zone strong {
       font-size: 14px;
+      line-height: 1.35;
     }
 
     .drop-zone span {
@@ -505,6 +506,32 @@
       align-items: center;
     }
 
+    .file-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .file-action-btn {
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .file-action-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: #eef4ff;
+    }
+
     .file-main {
       min-width: 0;
       display: grid;
@@ -548,6 +575,11 @@
     .file-badge.warn {
       background: #fff7e6;
       color: var(--amber);
+    }
+
+    .file-badge.bad {
+      background: #ffe4e0;
+      color: var(--red);
     }
 
     .icon-button {
@@ -675,6 +707,83 @@
       color: var(--muted);
       text-align: center;
       padding: 14px;
+      font-size: 12px;
+      line-height: 1.45;
+      background: #fbfcfe;
+    }
+
+    .split-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .split-drop-zone {
+      min-height: 132px;
+      margin-bottom: 2px;
+    }
+
+    .split-drop-zone .drop-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+    }
+
+    .split-settings {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 128px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .split-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .split-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+      font-size: 12px;
+    }
+
+    .split-item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .split-item strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .split-item span {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .split-item.bad {
+      border-color: #ffd6d1;
+      background: #fff9f8;
+    }
+
+    .split-empty {
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      padding: 13px;
+      color: var(--muted);
+      text-align: center;
       font-size: 12px;
       line-height: 1.45;
       background: #fbfcfe;
@@ -929,6 +1038,10 @@
       .db-item-actions {
         grid-template-columns: 1fr;
       }
+
+      .split-settings {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -974,6 +1087,43 @@
               <div class="format-chip"><strong>HAR / Netscape</strong><span>抓包与 cookie jar</span></div>
             </div>
             <div class="file-list" id="fileList"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">批量校验与分割</h2>
+              <p class="panel-caption">先检查格式，再按条数拆成多份 JSON。</p>
+            </div>
+          </div>
+          <div class="panel-body split-actions">
+            <label class="drop-zone split-drop-zone" id="splitDropZone">
+              <span class="drop-icon">+</span>
+              <strong>点击选择或拖拽文件到分割区</strong>
+              <span>仅用于校验与分割，不会自动加入上方转换结果</span>
+              <input id="splitFileInput" type="file" multiple accept=".txt,.json,.csv,.tsv,.har,.cookie,.cookies,.log,text/plain,application/json,text/csv">
+            </label>
+            <div class="toolbar">
+              <button class="btn btn-secondary" id="btnSplitChoose" type="button"><span class="btn-icon">+</span>继续添加文件</button>
+              <button class="btn btn-primary" id="btnSplitCheck" type="button"><span class="btn-icon">✓</span>检查并分割</button>
+            </div>
+            <div class="split-settings">
+              <label class="setting-label" for="splitSizeInput">
+                <strong>每份记录数</strong>
+                <span>过大的导入数据会拆成多份</span>
+              </label>
+              <input class="search-input" id="splitSizeInput" type="number" min="1" step="1" value="200">
+            </div>
+            <div class="toolbar">
+              <button class="btn btn-secondary" id="btnSplitDownloadAll" type="button" disabled><span class="btn-icon">↓</span>导出所有分片</button>
+              <button class="btn btn-ghost" id="btnSplitAddToCurrent" type="button" disabled><span class="btn-icon">+</span>加入当前结果</button>
+              <button class="btn btn-ghost" id="btnSplitClear" type="button"><span class="btn-icon">x</span>清空分割</button>
+            </div>
+            <div class="split-list" id="splitStatusList">
+              <div class="split-empty">尚未选择需要校验的文件。</div>
+            </div>
+            <div class="split-list" id="splitChunkList"></div>
           </div>
         </section>
 
@@ -1151,7 +1301,12 @@
       duplicateCount: 0,
       activeView: 'table',
       logs: [],
-      savedSets: []
+      savedSets: [],
+      splitFiles: [],
+      splitResults: [],
+      splitSources: [],
+      splitRecords: [],
+      splitChunks: []
     };
 
     const els = {
@@ -1167,6 +1322,16 @@
       btnCopyJson: document.getElementById('btnCopyJson'),
       btnDownloadCsv: document.getElementById('btnDownloadCsv'),
       btnDownloadTxt: document.getElementById('btnDownloadTxt'),
+      splitDropZone: document.getElementById('splitDropZone'),
+      splitFileInput: document.getElementById('splitFileInput'),
+      splitSizeInput: document.getElementById('splitSizeInput'),
+      btnSplitChoose: document.getElementById('btnSplitChoose'),
+      btnSplitCheck: document.getElementById('btnSplitCheck'),
+      btnSplitDownloadAll: document.getElementById('btnSplitDownloadAll'),
+      btnSplitAddToCurrent: document.getElementById('btnSplitAddToCurrent'),
+      btnSplitClear: document.getElementById('btnSplitClear'),
+      splitStatusList: document.getElementById('splitStatusList'),
+      splitChunkList: document.getElementById('splitChunkList'),
       btnSaveDb: document.getElementById('btnSaveDb'),
       btnExportDb: document.getElementById('btnExportDb'),
       btnRefreshDb: document.getElementById('btnRefreshDb'),
@@ -1343,7 +1508,8 @@
         format: meta.format || '文本',
         domain: meta.domain || '',
         rawName: meta.name || '',
-        cookieCount: cookiePartCount(clean)
+        cookieCount: cookiePartCount(clean),
+        ...(meta.extra || {})
       };
     }
 
@@ -1439,6 +1605,11 @@
         return { format: 'HAR', records: harRecords, warnings };
       }
 
+      const accountRecords = parseAccountBundle(data, fileName);
+      if (accountRecords && accountRecords.records.length) {
+        return accountRecords;
+      }
+
       const candidates = normalizeJsonCandidates(data);
       if (!candidates.length) {
         return { format: 'JSON', records: [], warnings: ['JSON 中没有找到 cookie 字段或 name/value 结构'] };
@@ -1474,6 +1645,180 @@
 
       if (!records.length) warnings.push('JSON 已读取，但未找到可转换的 cookie');
       return { format: cookieObjects.length && !cookieStrings.length ? 'JSON Cookie 对象' : 'JSON', records, warnings };
+    }
+
+    function parseJsonLinesContent(text, fileName) {
+      const lines = String(text || '')
+        .replace(/^\uFEFF/, '')
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      if (!lines.length || !lines.some(line => /^[\[{]/.test(line))) return null;
+
+      const items = [];
+      let parseFailures = 0;
+      lines.forEach(line => {
+        if (!/^[\[{]/.test(line)) {
+          parseFailures += 1;
+          return;
+        }
+        try {
+          const value = JSON.parse(line);
+          if (Array.isArray(value)) {
+            items.push(...value);
+          } else {
+            items.push(value);
+          }
+        } catch (_) {
+          parseFailures += 1;
+        }
+      });
+
+      if (!items.length || parseFailures === lines.length) return null;
+
+      const cookieStrings = [];
+      const cookieObjects = [];
+
+      items.forEach(item => {
+        if (typeof item === 'string') {
+          if (looksLikeCookie(item)) cookieStrings.push(item);
+          return;
+        }
+        if (!item || typeof item !== 'object') return;
+        const direct = item.cookie || item.Cookie || item.cookies || item.cookieString || item.cookie_header || item.header || item.valueString;
+        if (typeof direct === 'string' && looksLikeCookie(direct)) {
+          cookieStrings.push(direct);
+          return;
+        }
+        const name = item.name || item.key || item.Name;
+        const value = item.value || item.Value;
+        if (name !== undefined && value !== undefined) {
+          cookieObjects.push({
+            name: String(name),
+            value: String(value),
+            domain: item.domain || item.host || item.url || item.Domain || ''
+          });
+        }
+      });
+
+      const records = [
+        ...recordsFromCookieStrings(cookieStrings, { source: fileName, format: 'JSON Lines' }),
+        ...recordsFromCookieObjects(cookieObjects, fileName, 'JSON Lines Cookie 对象')
+      ];
+
+      if (!records.length) {
+        return {
+          format: 'JSON Lines',
+          records: [],
+          warnings: ['逐行 JSON 已读取，但未找到可转换的 cookie']
+        };
+      }
+
+      return {
+        format: 'JSON Lines',
+        records,
+        warnings: parseFailures ? [`跳过 ${parseFailures} 行非 JSON 内容`] : []
+      };
+    }
+
+    function parseAccountBundle(data, fileName) {
+      const accountLists = [];
+      const rootAccounts = data && typeof data === 'object' ? data.accounts : null;
+      const nestedAccounts = data && data.data && typeof data.data === 'object' ? data.data.accounts : null;
+
+      if (Array.isArray(rootAccounts)) accountLists.push(rootAccounts);
+      if (Array.isArray(nestedAccounts)) accountLists.push(nestedAccounts);
+
+      if (!accountLists.length && Array.isArray(data)) {
+        const hasAccountFields = data.some(item => isAccountLike(item));
+        if (hasAccountFields) accountLists.push(data);
+      }
+
+      if (!accountLists.length) return null;
+
+      const seen = new Set();
+      const records = [];
+      let missingCookieCount = 0;
+
+      accountLists.flat().forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        const cookie = cleanCookie(item.cookie || item.Cookie || item.cookieString || item.cookie_header || '');
+        if (!looksLikeCookie(cookie)) {
+          if (item.email || item.display_name || item.account_id) missingCookieCount += 1;
+          return;
+        }
+        const key = normalizeCookie(cookie).toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        const email = String(item.email || '').trim();
+        const displayName = String(item.display_name || '').trim();
+        const accountId = String(item.account_id || '').trim();
+        const label = email || displayName || accountId;
+        const creditsAvailable = item.credits_available;
+        const creditsTotal = item.credits_total;
+        const creditsUsed = item.credits_used;
+        const creditsAvailableUntil = item.credits_available_until;
+
+        records.push(makeRecord(cookie, {
+          source: fileName,
+          format: 'JSON 账户列表',
+          domain: label,
+          name: label,
+          extra: {
+            accountId,
+            email,
+            displayName,
+            creditsAvailable,
+            creditsTotal,
+            creditsUsed,
+            creditsAvailableUntil,
+            cookieOnly: item.cookie_only,
+            clientId: item.client_id,
+            liveProbe: item.live_probe
+          }
+        }));
+      });
+
+      if (!records.length) {
+        return {
+          format: 'JSON 账户列表',
+          records: [],
+          warnings: ['JSON 中找到了 accounts，但没有有效 cookie']
+        };
+      }
+
+      const warnings = [];
+      const declaredTotal = Number(data && typeof data === 'object' ? data.total : NaN);
+      const accountCount = Array.isArray(rootAccounts) ? rootAccounts.length : records.length;
+      if (Number.isFinite(declaredTotal) && declaredTotal !== accountCount) {
+        warnings.push(`total 为 ${declaredTotal}，实际识别 ${accountCount} 个账户`);
+      }
+      if (missingCookieCount) {
+        warnings.push(`有 ${missingCookieCount} 个账户缺少可用 cookie`);
+      }
+
+      return {
+        format: 'JSON 账户列表',
+        records,
+        warnings
+      };
+    }
+
+    function isAccountLike(item) {
+      return !!(item && typeof item === 'object' && (
+        item.email !== undefined ||
+        item.display_name !== undefined ||
+        item.account_id !== undefined ||
+        item.credits_available !== undefined ||
+        item.credits_total !== undefined ||
+        item.credits_used !== undefined ||
+        item.credits_available_until !== undefined ||
+        item.cookie_only !== undefined ||
+        item.client_id !== undefined ||
+        item.live_probe !== undefined
+      ));
     }
 
     function normalizeJsonCandidates(data) {
@@ -1652,6 +1997,9 @@
         return parseDelimitedContent(trimmed, fileName, ',');
       }
 
+      const jsonLines = parseJsonLinesContent(trimmed, fileName);
+      if (jsonLines) return jsonLines;
+
       return parseTextContent(trimmed, fileName);
     }
 
@@ -1696,6 +2044,198 @@
       state.sources.push(source);
       const warnText = source.warnings && source.warnings.length ? `；${source.warnings.join('；')}` : '';
       addLog(`导入：${source.name}`, `${source.format}，${source.records.length} 条${warnText}`);
+    }
+
+    function handleSplitFiles(fileList) {
+      const incoming = Array.from(fileList || []);
+      if (!incoming.length) return;
+      const known = new Set(state.splitFiles.map(file => `${file.name}:${file.size}:${file.lastModified}`));
+      incoming.forEach(file => {
+        const key = `${file.name}:${file.size}:${file.lastModified}`;
+        if (!known.has(key)) {
+          known.add(key);
+          state.splitFiles.push(file);
+        }
+      });
+      state.splitResults = [];
+      state.splitSources = [];
+      state.splitRecords = [];
+      state.splitChunks = [];
+      renderSplitPanel();
+      showToast(`分割区已有 ${state.splitFiles.length} 个待校验文件`);
+      els.splitFileInput.value = '';
+    }
+
+    async function checkAndSplitFiles() {
+      if (!state.splitFiles.length) {
+        showToast('请先选择待分割文件');
+        return;
+      }
+
+      const chunkSize = Number.parseInt(els.splitSizeInput.value, 10);
+      if (!Number.isFinite(chunkSize) || chunkSize < 1) {
+        showToast('每份记录数必须大于 0');
+        return;
+      }
+
+      const results = [];
+      const validSources = [];
+      const mergedRecords = [];
+
+      for (const file of state.splitFiles) {
+        try {
+          const text = await readFileAsText(file);
+          const parsed = parseAny(text, file.name);
+          const compatible = parsed.records.length > 0;
+          const warnings = parsed.warnings || [];
+          results.push({
+            id: uid(),
+            name: file.name,
+            size: file.size,
+            format: parsed.format,
+            count: parsed.records.length,
+            compatible,
+            warnings
+          });
+
+          if (compatible) {
+            const source = {
+              id: uid(),
+              name: file.name,
+              size: file.size,
+              format: parsed.format,
+              records: parsed.records,
+              warnings
+            };
+            validSources.push(source);
+            parsed.records.forEach(record => {
+              mergedRecords.push({
+                ...record,
+                source: file.name,
+                sourceFormat: record.format || parsed.format,
+                sourceBase: baseName(file.name),
+                cookieCount: record.cookieCount || cookiePartCount(record.cookie)
+              });
+            });
+          }
+        } catch (error) {
+          results.push({
+            id: uid(),
+            name: file.name,
+            size: file.size,
+            format: '读取失败',
+            count: 0,
+            compatible: false,
+            warnings: [error.message || String(error)]
+          });
+        }
+      }
+
+      state.splitResults = results;
+      state.splitSources = validSources;
+      state.splitRecords = mergedRecords;
+      rebuildSplitChunks();
+      renderSplitPanel();
+
+      const validCount = results.filter(item => item.compatible).length;
+      const invalidCount = results.length - validCount;
+      showToast(`校验完成：${validCount} 个可导入，${invalidCount} 个不适配，生成 ${state.splitChunks.length} 个分片`);
+    }
+
+    function rebuildSplitChunks() {
+      const chunkSize = Math.max(1, Number.parseInt(els.splitSizeInput.value, 10) || 200);
+      const formatted = state.splitRecords.map((record, index) => formatOutputRecord(record, index + 1));
+      const chunks = [];
+      for (let i = 0; i < formatted.length; i += chunkSize) {
+        const records = formatted.slice(i, i + chunkSize);
+        chunks.push({
+          index: chunks.length + 1,
+          start: i + 1,
+          end: i + records.length,
+          records
+        });
+      }
+      state.splitChunks = chunks;
+    }
+
+    function renderSplitPanel() {
+      renderSplitStatus();
+      renderSplitChunks();
+      setSplitState();
+    }
+
+    function renderSplitStatus() {
+      if (state.splitResults.length) {
+        els.splitStatusList.innerHTML = state.splitResults.map(item => {
+          const statusClass = item.compatible ? '' : ' bad';
+          const badgeClass = item.compatible ? 'good' : 'bad';
+          const statusText = item.compatible ? '可导入' : '不适配';
+          const warnText = item.warnings && item.warnings.length ? ` · ${item.warnings.join('；')}` : '';
+          return `
+            <div class="split-item${statusClass}">
+              <div class="split-item-head">
+                <strong title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong>
+                <span class="file-badge ${badgeClass}">${statusText}</span>
+              </div>
+              <span>${escapeHtml(item.format)} · ${item.count} 条${escapeHtml(warnText)}</span>
+            </div>
+          `;
+        }).join('');
+        return;
+      }
+
+      if (state.splitFiles.length) {
+        els.splitStatusList.innerHTML = state.splitFiles.map(file => `
+          <div class="split-item">
+            <div class="split-item-head">
+              <strong title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</strong>
+              <span class="file-badge">待检查</span>
+            </div>
+            <span>${escapeHtml(formatBytes(file.size))}</span>
+          </div>
+        `).join('');
+        return;
+      }
+
+      els.splitStatusList.innerHTML = '<div class="split-empty">尚未选择需要校验的文件。</div>';
+    }
+
+    function renderSplitChunks() {
+      if (!state.splitChunks.length) {
+        els.splitChunkList.innerHTML = '';
+        return;
+      }
+
+      els.splitChunkList.innerHTML = state.splitChunks.map(chunk => `
+        <div class="split-item">
+          <div class="split-item-head">
+            <strong>分片 ${String(chunk.index).padStart(3, '0')}</strong>
+            <button class="file-action-btn" type="button" data-split-download="${chunk.index}">导出</button>
+          </div>
+          <span>${chunk.start}-${chunk.end} · ${chunk.records.length} 条</span>
+        </div>
+      `).join('');
+
+      els.splitChunkList.querySelectorAll('[data-split-download]').forEach(button => {
+        button.addEventListener('click', () => {
+          const index = Number.parseInt(button.getAttribute('data-split-download'), 10);
+          const chunk = state.splitChunks.find(item => item.index === index);
+          if (chunk) downloadSplitChunk(chunk);
+        });
+      });
+    }
+
+    function setSplitState() {
+      const hasChunks = state.splitChunks.length > 0;
+      els.btnSplitDownloadAll.disabled = !hasChunks;
+      els.btnSplitAddToCurrent.disabled = !state.splitSources.length;
+    }
+
+    function formatBytes(value) {
+      const size = Number(value) || 0;
+      if (size < 1024) return `${size} B`;
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      return `${(size / 1024 / 1024).toFixed(1)} MB`;
     }
 
     function addPaste() {
@@ -1776,6 +2316,13 @@
         base.format = record.sourceFormat;
         base.domain = record.domain || '';
         base.cookieCount = record.cookieCount;
+        if (record.accountId) base.accountId = record.accountId;
+        if (record.email) base.email = record.email;
+        if (record.displayName) base.displayName = record.displayName;
+        if (record.creditsAvailable !== undefined) base.creditsAvailable = record.creditsAvailable;
+        if (record.creditsTotal !== undefined) base.creditsTotal = record.creditsTotal;
+        if (record.creditsUsed !== undefined) base.creditsUsed = record.creditsUsed;
+        if (record.creditsAvailableUntil) base.creditsAvailableUntil = record.creditsAvailableUntil;
       }
 
       return {
@@ -1835,7 +2382,10 @@
               ${warn ? `<span class="file-badge warn">${source.warnings.length} 提醒</span>` : ''}
             </div>
           </div>
-          <button class="icon-button" type="button" title="移除此来源" data-remove-source="${source.id}">x</button>
+          <div class="file-actions">
+            <button class="file-action-btn" type="button" title="仅导出这一批记录" data-export-source="${source.id}">独立导出</button>
+            <button class="icon-button" type="button" title="移除此来源" data-remove-source="${source.id}">x</button>
+          </div>
         `;
         els.fileList.appendChild(item);
       });
@@ -1847,6 +2397,15 @@
           state.sources = state.sources.filter(source => source.id !== id);
           addLog(`移除来源：${target ? target.name : id}`, '已从当前结果中移除');
           rebuildOutput();
+        });
+      });
+
+      els.fileList.querySelectorAll('[data-export-source]').forEach(button => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-export-source');
+          const target = state.sources.find(source => source.id === id);
+          if (!target) return;
+          downloadSourceJson(target);
         });
       });
     }
@@ -1963,7 +2522,7 @@
 
     function downloadCsv() {
       const headers = els.metaToggle.checked
-        ? ['id', 'name', 'cookie', 'source', 'format', 'domain', 'cookieCount']
+        ? ['id', 'name', 'cookie', 'source', 'format', 'domain', 'cookieCount', 'accountId', 'email', 'displayName', 'creditsAvailable', 'creditsTotal', 'creditsUsed', 'creditsAvailableUntil']
         : ['id', 'name', 'cookie'];
       const rows = publicRecords().map(record => headers.map(header => csvCell(record[header])));
       downloadBlob([headers.join(','), ...rows.map(row => row.join(','))].join('\n'), `cookies_${state.output.length}.csv`, 'text/csv;charset=utf-8');
@@ -1973,6 +2532,74 @@
     function downloadTxt() {
       downloadBlob(state.output.map(record => record.cookie).join('\n'), `cookies_${state.output.length}.txt`, 'text/plain;charset=utf-8');
       showToast('TXT 已开始下载');
+    }
+
+    function buildSourceOutput(source) {
+      const seen = new Set();
+      const records = [];
+      const dedupe = els.dedupeToggle.checked;
+
+      source.records.forEach(record => {
+        const cookie = cleanCookie(record.cookie);
+        if (!looksLikeCookie(cookie)) return;
+        const key = normalizeCookie(cookie).toLowerCase();
+        if (dedupe && seen.has(key)) return;
+        seen.add(key);
+        records.push({
+          ...record,
+          cookie,
+          source: source.name,
+          sourceFormat: record.format || source.format,
+          sourceBase: baseName(source.name),
+          cookieCount: cookiePartCount(cookie)
+        });
+      });
+
+      return records.map((record, index) => formatOutputRecord(record, index + 1));
+    }
+
+    function downloadSourceJson(source) {
+      const records = buildSourceOutput(source);
+      if (!records.length) {
+        showToast('这个来源没有可导出的记录');
+        return;
+      }
+      downloadBlob(JSON.stringify(publicRecords(records), null, 2), `${baseName(source.name)}.json`, 'application/json;charset=utf-8');
+      showToast(`已独立导出：${source.name}`);
+    }
+
+    function downloadSplitChunk(chunk) {
+      const suffix = String(chunk.index).padStart(3, '0');
+      const data = JSON.stringify(publicRecords(chunk.records), null, 2);
+      downloadBlob(data, `cookies_split_${suffix}_${chunk.records.length}.json`, 'application/json;charset=utf-8');
+      showToast(`已导出分片 ${suffix}`);
+    }
+
+    async function downloadAllSplitChunks() {
+      if (!state.splitChunks.length) {
+        showToast('还没有可导出的分片');
+        return;
+      }
+      for (const chunk of state.splitChunks) {
+        downloadSplitChunk(chunk);
+        await new Promise(resolve => window.setTimeout(resolve, 180));
+      }
+      showToast(`已触发 ${state.splitChunks.length} 个分片下载`);
+    }
+
+    function addSplitSourcesToCurrent() {
+      if (!state.splitSources.length) {
+        showToast('没有通过校验的文件可加入');
+        return;
+      }
+      const imported = state.splitSources.map(source => ({
+        ...source,
+        id: uid(),
+        records: source.records.map(record => ({ ...record }))
+      }));
+      imported.forEach(addSource);
+      rebuildOutput();
+      showToast(`已加入当前结果：${imported.length} 个来源`);
     }
 
     async function saveCurrentSet() {
@@ -1994,7 +2621,7 @@
           meta: els.metaToggle.checked,
           nameMode: els.nameMode.value
         },
-        records: publicRecords(),
+        records: state.sources.flatMap(source => source.records.map(record => ({ ...record }))),
         sources: state.sources.map(source => ({
           name: source.name,
           format: source.format,
@@ -2084,6 +2711,7 @@
         size: item.count,
         format: '本地数据库',
         records: item.records.map(record => ({
+          ...record,
           cookie: record.cookie,
           source: record.source || item.name,
           format: record.format || '本地数据库',
@@ -2196,7 +2824,23 @@
       handleFiles(event.dataTransfer.files);
     });
 
+    els.splitDropZone.addEventListener('dragover', event => {
+      event.preventDefault();
+      els.splitDropZone.classList.add('dragover');
+    });
+
+    els.splitDropZone.addEventListener('dragleave', () => {
+      els.splitDropZone.classList.remove('dragover');
+    });
+
+    els.splitDropZone.addEventListener('drop', event => {
+      event.preventDefault();
+      els.splitDropZone.classList.remove('dragover');
+      handleSplitFiles(event.dataTransfer.files);
+    });
+
     els.fileInput.addEventListener('change', event => handleFiles(event.target.files));
+    els.btnSplitChoose.addEventListener('click', () => els.splitFileInput.click());
     els.btnParsePaste.addEventListener('click', addPaste);
     els.btnClearPaste.addEventListener('click', () => {
       els.pasteInput.value = '';
@@ -2211,6 +2855,29 @@
     els.btnCopyJson.addEventListener('click', copyJson);
     els.btnDownloadCsv.addEventListener('click', downloadCsv);
     els.btnDownloadTxt.addEventListener('click', downloadTxt);
+    els.splitFileInput.addEventListener('change', event => handleSplitFiles(event.target.files));
+    els.btnSplitCheck.addEventListener('click', () => {
+      checkAndSplitFiles().catch(error => showToast(error.message || '分割失败'));
+    });
+    els.btnSplitDownloadAll.addEventListener('click', () => {
+      downloadAllSplitChunks().catch(error => showToast(error.message || '导出失败'));
+    });
+    els.btnSplitAddToCurrent.addEventListener('click', addSplitSourcesToCurrent);
+    els.btnSplitClear.addEventListener('click', () => {
+      state.splitFiles = [];
+      state.splitResults = [];
+      state.splitSources = [];
+      state.splitRecords = [];
+      state.splitChunks = [];
+      renderSplitPanel();
+      showToast('分割区已清空');
+    });
+    els.splitSizeInput.addEventListener('change', () => {
+      if (state.splitRecords.length) {
+        rebuildSplitChunks();
+        renderSplitPanel();
+      }
+    });
     els.btnSaveDb.addEventListener('click', () => {
       saveCurrentSet().catch(error => showToast(error.message || '保存失败'));
     });
@@ -2230,7 +2897,13 @@
     els.filterSource.addEventListener('change', applyFilters);
 
     [els.dedupeToggle, els.normalizeToggle, els.metaToggle, els.nameMode].forEach(input => {
-      input.addEventListener('change', rebuildOutput);
+      input.addEventListener('change', () => {
+        rebuildOutput();
+        if (state.splitRecords.length) {
+          rebuildSplitChunks();
+          renderSplitPanel();
+        }
+      });
     });
 
     document.querySelectorAll('.tab').forEach(tab => {
@@ -2249,11 +2922,14 @@
       parseDelimitedRows,
       normalizeCookie,
       saveCurrentSet,
-      refreshDbList
+      refreshDbList,
+      checkAndSplitFiles,
+      rebuildSplitChunks
     };
 
     renderSummary();
     setDownloadState();
+    renderSplitPanel();
     refreshDbList().catch(error => addLog('数据库初始化失败', error.message || String(error)));
   </script>
 </body>
