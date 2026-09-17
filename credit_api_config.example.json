@@ -1,0 +1,15 @@
+{
+  "api_url": "https://firefly.adobe.io/v1/credits/balance",
+  "method": "GET",
+  "points_path": "",
+  "cookie_field": "cookie",
+  "identifier_field": "id",
+  "body_template": "",
+  "delay_seconds": 0.3,
+  "timeout_seconds": 20,
+  "retries": 2,
+  "send_cookie_header": true,
+  "headers": {
+    "Accept": "application/json"
+  }
+}

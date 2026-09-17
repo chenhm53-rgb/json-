@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>收银王 Cookie 失效恢复功能</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --ink: #16202b;
+      --muted: #667085;
+      --line: #dce3ec;
+      --primary: #1769e0;
+      --primary-dark: #0f55bd;
+      --green: #087443;
+      --green-bg: #ecfdf3;
+      --red: #b42318;
+      --red-bg: #fff3f1;
+      --amber: #985b08;
+      --amber-bg: #fff8e7;
+      --shadow: 0 16px 36px rgba(24, 45, 72, 0.08);
+      --radius: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--bg); }
+    button, input, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .topbar { background: #fff; border-bottom: 1px solid var(--line); }
+    .topbar-inner, .page { width: min(1240px, calc(100vw - 32px)); margin: 0 auto; }
+    .topbar-inner { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; color: #fff; background: #1769e0; font-weight: 900; letter-spacing: 0; }
+    .brand h1 { margin: 0; font-size: 20px; line-height: 1.25; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .top-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .badge { display: inline-flex; align-items: center; min-height: 28px; padding: 5px 10px; border-radius: 999px; background: #edf4ff; color: #174ea6; font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .badge.neutral { background: #f2f4f7; color: #475467; }
+
+    .page { padding: 28px 0 48px; }
+    .intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+    .intro h2 { margin: 0; font-size: 28px; line-height: 1.2; }
+    .intro p { max-width: 720px; margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .security-note { max-width: 360px; padding: 12px 14px; border-left: 3px solid #d6922e; background: var(--amber-bg); color: #6b4a16; font-size: 12px; line-height: 1.55; }
+
+    .layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .stack { display: grid; gap: 18px; }
+    .panel { min-width: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .panel-head { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .panel-head h3 { margin: 0; font-size: 15px; line-height: 1.3; }
+    .panel-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .panel-body { padding: 18px; }
+
+    .field { display: grid; gap: 6px; margin-bottom: 13px; color: #344054; font-size: 12px; font-weight: 800; }
+    .field:last-child { margin-bottom: 0; }
+    .field input, .field textarea { width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--ink); background: #fff; font-size: 13px; font-weight: 500; }
+    .field input:focus, .field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.14); }
+    .field textarea { min-height: 214px; resize: vertical; line-height: 1.5; }
+    .field-help { margin-top: -7px; color: var(--muted); font-size: 11px; line-height: 1.5; font-weight: 500; }
+    .two-col { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
+    .button-row { display: flex; gap: 9px; flex-wrap: wrap; }
+    .btn { min-height: 38px; padding: 9px 13px; border-radius: 8px; font-size: 13px; font-weight: 800; transition: background-color .16s ease, transform .16s ease; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-primary { color: #fff; background: var(--primary); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-secondary { color: #164a97; background: #eaf2ff; }
+    .btn-ghost { color: #475467; background: #f2f4f7; }
+    .btn-danger { color: var(--red); background: var(--red-bg); }
+    .proxy-note { margin-bottom: 14px; padding: 11px 12px; background: var(--soft); border: 1px solid var(--line); color: #475467; font-size: 12px; line-height: 1.55; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .metric { min-height: 84px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); }
+    .metric span, .metric strong { display: block; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    .metric strong { margin-top: 9px; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .metric.success strong { color: var(--green); }
+    .metric.failed strong { color: var(--red); }
+    .metric.running strong { color: var(--primary); }
+
+    .result-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .result-status { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .table-wrap { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: 8px; }
+    table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid #edf0f4; text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; z-index: 1; color: #475467; background: #f8fafc; font-size: 11px; font-weight: 900; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .email { min-width: 220px; color: #344054; word-break: break-all; }
+    .state { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 900; white-space: nowrap; }
+    .state.success { color: var(--green); background: var(--green-bg); }
+    .state.failed { color: var(--red); background: var(--red-bg); }
+    .state.pending { color: #475467; background: #f2f4f7; }
+    .state.running { color: #174ea6; background: #edf4ff; }
+    .empty { padding: 42px 18px; color: var(--muted); text-align: center; font-size: 13px; line-height: 1.55; }
+    .log { margin-top: 12px; min-height: 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    .reference { display: grid; gap: 9px; }
+    .reference-row { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; align-items: start; padding-bottom: 9px; border-bottom: 1px solid #edf0f4; font-size: 12px; line-height: 1.45; }
+    .reference-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .reference-row strong { color: #667085; }
+    code { padding: 2px 5px; border-radius: 4px; color: #344054; background: #f2f4f7; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+    .footer-note { margin-top: 18px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+
+    @media (max-width: 880px) {
+      .topbar-inner { min-height: 70px; align-items: flex-start; padding: 14px 0; flex-direction: column; }
+      .top-status { justify-content: flex-start; }
+      .intro { flex-direction: column; }
+      .security-note { max-width: none; }
+      .layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .topbar-inner, .page { width: min(100% - 24px, 1240px); }
+      .page { padding-top: 20px; }
+      .intro h2 { font-size: 23px; }
+      .panel-body { padding: 14px; }
+      .two-col, .metrics { grid-template-columns: 1fr 1fr; }
+      .two-col .field:first-child { grid-column: 1 / -1; }
+      .metrics { gap: 8px; }
+      .metric { min-height: 72px; padding: 10px; }
+      .metric strong { margin-top: 7px; font-size: 21px; }
+      .result-tools { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">收</div>
+        <div>
+          <h1>收银王 Cookie 失效恢复功能</h1>
+          <p>独立功能页：按邮箱提交恢复任务并查看处理结果</p>
+        </div>
+      </div>
+      <div class="top-status">
+        <span class="badge">独立页面</span>
+        <span class="badge neutral">状态结果模式</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="intro">
+      <div>
+        <h2>批量恢复失效 Cookie</h2>
+        <p>输入邮箱列表，按照接口文档提交恢复任务。页面只显示邮箱、成功/失败和说明，不接收或展示完整 Cookie。</p>
+      </div>
+      <div class="security-note">API Key 只应保存在你自己的后端环境变量中。请通过本机代理或你控制的 HTTPS 后端调用上游接口，不要把密钥写进 HTML 或上传 GitHub。</div>
+    </div>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="panel">
+          <div class="panel-head">
+            <h3>恢复任务</h3>
+            <p>单次建议不超过 20 个邮箱，并发范围 1~10。</p>
+          </div>
+          <div class="panel-body">
+            <div class="proxy-note">页面请求的是安全代理地址。推荐先运行随附的 `shouyinwang_recovery_proxy.py`，再打开它提供的网页地址。</div>
+            <label class="field">
+              后端代理地址
+              <input id="proxyUrl" type="url" value="/api/revive" placeholder="http://127.0.0.1:8787/api/revive">
+              <span class="field-help">不要填写上游 API Key；代理会在服务端读取环境变量。</span>
+            </label>
+            <label class="field">
+              邮箱列表
+              <textarea id="emailInput" spellcheck="false" placeholder="每行一个邮箱，也支持逗号、分号或空格分隔"></textarea>
+              <span class="field-help" id="emailHint">尚未识别邮箱</span>
+            </label>
+            <div class="two-col">
+              <label class="field">
+                并发数
+                <input id="concurrencyInput" type="number" min="1" max="10" step="1" value="5">
+              </label>
+              <label class="field">
+                超时（秒）
+                <input id="timeoutInput" type="number" min="60" max="600" step="30" value="360">
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-primary" id="startButton" type="button">开始恢复</button>
+              <button class="btn btn-secondary" id="healthButton" type="button">检查代理</button>
+              <button class="btn btn-ghost" id="clearButton" type="button">清空</button>
+            </div>
+            <div class="log" id="taskLog" role="status">等待提交任务。</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>接口文档摘要</h3>
+            <p>页面只使用文档中的邮箱和并发参数。</p>
+          </div>
+          <div class="panel-body reference">
+            <div class="reference-row"><strong>方法</strong><span><code>POST</code></span></div>
+            <div class="reference-row"><strong>上游接口</strong><span><code>http://167.160.91.234:17081/api/v1/email-pool/revive-api</code></span></div>
+            <div class="reference-row"><strong>请求体</strong><span><code>{ emails: [...], concurrency: 5 }</code></span></div>
+            <div class="reference-row"><strong>浏览器结果</strong><span>只保留 <code>email</code>、<code>ok</code>、<code>message</code>，过滤返回中的 <code>cookie</code> 字段。</span></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>恢复结果</h3>
+          <p>结果按邮箱显示。成功记录不会在页面或导出文件中包含完整 Cookie。</p>
+        </div>
+        <div class="panel-body">
+          <div class="metrics">
+            <div class="metric"><span>提交数量</span><strong id="totalCount">0</strong></div>
+            <div class="metric success"><span>成功</span><strong id="successCount">0</strong></div>
+            <div class="metric failed"><span>失败/跳过</span><strong id="failedCount">0</strong></div>
+            <div class="metric running"><span>处理中</span><strong id="runningCount">0</strong></div>
+          </div>
+          <div class="result-tools" style="margin-top:16px;">
+            <div class="result-status" id="resultStatus">暂无恢复结果。</div>
+            <div class="button-row">
+              <button class="btn btn-secondary" id="downloadJsonButton" type="button" disabled>导出结果 JSON</button>
+              <button class="btn btn-ghost" id="downloadCsvButton" type="button" disabled>导出结果 CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>邮箱</th><th>状态</th><th>说明</th></tr></thead>
+              <tbody id="resultBody"><tr><td colspan="3" class="empty">提交任务后，这里显示每个邮箱的处理结果。</td></tr></tbody>
+            </table>
+          </div>
+          <p class="footer-note">本页面不保存 API Key，不显示、不复制、不导出完整 Cookie。请只对你有权限管理的账号使用，并遵守 Adobe 与服务提供方的使用规则。</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const state = { emails: [], results: [], busy: false, startedAt: null };
+    const els = {
+      proxyUrl: document.getElementById('proxyUrl'),
+      emailInput: document.getElementById('emailInput'),
+      emailHint: document.getElementById('emailHint'),
+      concurrencyInput: document.getElementById('concurrencyInput'),
+      timeoutInput: document.getElementById('timeoutInput'),
+      startButton: document.getElementById('startButton'),
+      healthButton: document.getElementById('healthButton'),
+      clearButton: document.getElementById('clearButton'),
+      taskLog: document.getElementById('taskLog'),
+      totalCount: document.getElementById('totalCount'),
+      successCount: document.getElementById('successCount'),
+      failedCount: document.getElementById('failedCount'),
+      runningCount: document.getElementById('runningCount'),
+      resultStatus: document.getElementById('resultStatus'),
+      resultBody: document.getElementById('resultBody'),
+      downloadJsonButton: document.getElementById('downloadJsonButton'),
+      downloadCsvButton: document.getElementById('downloadCsvButton')
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function parseEmails(text) {
+      const tokens = String(text || '').split(/[\s,;，；]+/).map(item => item.trim().replace(/^<|>$/g, '')).filter(Boolean);
+      const seen = new Set();
+      const valid = [];
+      const invalid = [];
+      tokens.forEach(email => {
+        const key = email.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) valid.push(email);
+        else invalid.push(email);
+      });
+      return { valid, invalid };
+    }
+
+    function updateEmailHint() {
+      const parsed = parseEmails(els.emailInput.value);
+      els.emailHint.textContent = parsed.invalid.length
+        ? `识别 ${parsed.valid.length} 个邮箱；忽略 ${parsed.invalid.length} 个格式不正确的内容。`
+        : `已识别 ${parsed.valid.length} 个邮箱，重复项会自动去重。`;
+      return parsed;
+    }
+
+    function updateMetrics() {
+      const total = state.results.length;
+      const success = state.results.filter(item => item.ok === true).length;
+      const failed = state.results.filter(item => item.ok === false).length;
+      const running = state.results.filter(item => item.status === 'running' || item.status === 'pending').length;
+      els.totalCount.textContent = total;
+      els.successCount.textContent = success;
+      els.failedCount.textContent = failed;
+      els.runningCount.textContent = running;
+      els.downloadJsonButton.disabled = !total || state.busy;
+      els.downloadCsvButton.disabled = !total || state.busy;
+    }
+
+    function stateLabel(item) {
+      if (item.status === 'running') return ['处理中', 'running'];
+      if (item.status === 'pending') return ['等待', 'pending'];
+      if (item.ok) return ['成功', 'success'];
+      return ['失败/跳过', 'failed'];
+    }
+
+    function renderResults() {
+      if (!state.results.length) {
+        els.resultBody.innerHTML = '<tr><td colspan="3" class="empty">提交任务后，这里显示每个邮箱的处理结果。</td></tr>';
+        updateMetrics();
+        return;
+      }
+      els.resultBody.innerHTML = state.results.map(item => {
+        const [label, className] = stateLabel(item);
+        return `<tr><td class="email">${escapeHtml(item.email)}</td><td><span class="state ${className}">${label}</span></td><td>${escapeHtml(item.message || '')}</td></tr>`;
+      }).join('');
+      updateMetrics();
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      els.startButton.disabled = busy;
+      els.healthButton.disabled = busy;
+      els.clearButton.disabled = busy;
+      els.startButton.textContent = busy ? '恢复处理中…' : '开始恢复';
+      updateMetrics();
+    }
+
+    function getProxyUrl() {
+      const value = els.proxyUrl.value.trim();
+      if (!value) throw new Error('请填写后端代理地址');
+      return value;
+    }
+
+    function healthUrl(proxyUrl) {
+      try {
+        const url = new URL(proxyUrl, window.location.href);
+        url.pathname = '/health';
+        url.search = '';
+        return url.href;
+      } catch (_) {
+        return proxyUrl.replace(/\/api\/revive\/?$/, '/health');
+      }
+    }
+
+    async function readJson(response) {
+      const text = await response.text();
+      try { return text ? JSON.parse(text) : {}; } catch (_) { return {}; }
+    }
+
+    async function checkHealth() {
+      try {
+        els.taskLog.textContent = '正在检查本机代理…';
+        const response = await fetch(healthUrl(getProxyUrl()), { headers: { Accept: 'application/json' } });
+        const data = await readJson(response);
+        if (!response.ok) throw new Error(data.message || `代理返回 HTTP ${response.status}`);
+        els.taskLog.textContent = `代理正常：${data.service || '服务已启动'}`;
+      } catch (error) {
+        els.taskLog.textContent = `代理检查失败：${error.message || error}`;
+      }
+    }
+
+    async function startRecovery() {
+      if (state.busy) return;
+      const parsed = updateEmailHint();
+      if (!parsed.valid.length) {
+        els.taskLog.textContent = '没有可提交的有效邮箱。';
+        return;
+      }
+      if (parsed.valid.length > 20) {
+        els.taskLog.textContent = '单批最多提交 20 个邮箱，请分批处理，避免重复触发恢复冷却。';
+        return;
+      }
+      const concurrency = Math.min(10, Math.max(1, Number.parseInt(els.concurrencyInput.value, 10) || 5));
+      els.concurrencyInput.value = concurrency;
+      const timeout = Math.min(600, Math.max(60, Number.parseInt(els.timeoutInput.value, 10) || 360));
+      els.timeoutInput.value = timeout;
+      state.emails = parsed.valid;
+      state.results = parsed.valid.map(email => ({ email, ok: null, status: 'pending', message: '等待接口返回' }));
+      state.startedAt = new Date();
+      renderResults();
+      setBusy(true);
+      els.taskLog.textContent = `已提交 ${parsed.valid.length} 个邮箱，等待恢复接口处理…`;
+      els.resultStatus.textContent = '任务进行中，单个账号可能需要 30~60 秒。';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout * 1000);
+      try {
+        const response = await fetch(getProxyUrl(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ emails: state.emails, concurrency }),
+          signal: controller.signal
+        });
+        const data = await readJson(response);
+        if (!response.ok) throw new Error(data.message || `代理返回 HTTP ${response.status}`);
+        const resultMap = new Map((Array.isArray(data.results) ? data.results : []).map(item => [String(item.email || '').toLowerCase(), {
+          email: String(item.email || ''),
+          ok: item.ok === true,
+          status: 'done',
+          message: String(item.message || (item.ok ? '恢复成功' : '恢复失败'))
+        }]));
+        state.results = state.emails.map(email => resultMap.get(email.toLowerCase()) || ({ email, ok: false, status: 'done', message: '接口未返回该邮箱结果' }));
+        const success = state.results.filter(item => item.ok).length;
+        els.taskLog.textContent = `处理完成：成功 ${success} 个，失败/跳过 ${state.results.length - success} 个。`;
+        els.resultStatus.textContent = `接口状态：${data.status || 'ok'} · 完成时间：${new Date().toLocaleString()}`;
+      } catch (error) {
+        const message = error.name === 'AbortError' ? '请求超时，请检查代理和上游任务状态。' : (error.message || String(error));
+        state.results = state.emails.map(email => ({ email, ok: false, status: 'done', message }));
+        els.taskLog.textContent = `恢复请求失败：${message}`;
+        els.resultStatus.textContent = '本次请求未获得有效结果。';
+      } finally {
+        clearTimeout(timer);
+        setBusy(false);
+        renderResults();
+      }
+    }
+
+    function download(content, name, type) {
+      const url = URL.createObjectURL(new Blob([content], { type }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function safeResults() {
+      return state.results.map(item => ({ email: item.email, ok: item.ok === true, message: item.message || '' }));
+    }
+
+    function downloadJson() {
+      const results = safeResults();
+      download(JSON.stringify({ generatedAt: new Date().toISOString(), total: results.length, success: results.filter(item => item.ok).length, failed: results.filter(item => !item.ok).length, results }, null, 2), 'shouyinwang_recovery_results.json', 'application/json;charset=utf-8');
+    }
+
+    function csvCell(value) { return `"${String(value ?? '').replace(/"/g, '""')}"`; }
+    function downloadCsv() {
+      const rows = [['email', 'ok', 'message'], ...safeResults().map(item => [item.email, item.ok ? 'true' : 'false', item.message])];
+      download(rows.map(row => row.map(csvCell).join(',')).join('\n'), 'shouyinwang_recovery_results.csv', 'text/csv;charset=utf-8');
+    }
+
+    els.emailInput.addEventListener('input', updateEmailHint);
+    els.startButton.addEventListener('click', startRecovery);
+    els.healthButton.addEventListener('click', checkHealth);
+    els.clearButton.addEventListener('click', () => {
+      if (state.busy) return;
+      els.emailInput.value = '';
+      state.emails = [];
+      state.results = [];
+      els.emailHint.textContent = '尚未识别邮箱';
+      els.taskLog.textContent = '等待提交任务。';
+      els.resultStatus.textContent = '暂无恢复结果。';
+      renderResults();
+    });
+    els.downloadJsonButton.addEventListener('click', downloadJson);
+    els.downloadCsvButton.addEventListener('click', downloadCsv);
+    updateEmailHint();
+    renderResults();
+  </script>
+</body>
+</html>
