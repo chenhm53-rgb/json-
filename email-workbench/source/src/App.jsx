@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  CheckCircle2,
   Download,
   Eye,
   EyeOff,
@@ -402,13 +401,13 @@ function App() {
   return (
     <main className="workspace-shell">
       <header className="topbar">
-        <div>
-          <p className="overline">本地文件工作台</p>
+        <div className="page-heading">
+          <span className="brand-mark" aria-hidden="true">W</span>
+          <div>
+          <p className="overline">工作台 / 邮箱文件</p>
           <h1>邮箱文件合并</h1>
-        </div>
-        <div className="privacy-pill">
-          <CheckCircle2 size={16} />
-          <span>本机处理，不上传</span>
+          <p className="topbar-caption">合并、凑整、分割和导出邮箱文件</p>
+          </div>
         </div>
       </header>
 

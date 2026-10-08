@@ -1291,6 +1291,11 @@
       background: #f5f7fb;
     }
 
+    /* The embedded mailbox page owns its header; avoid showing a second title card. */
+    #emailPanel > .panel-header {
+      display: none;
+    }
+
     .email-panel-frame {
       display: block;
       width: 100%;
