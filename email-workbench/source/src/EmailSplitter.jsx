@@ -36,7 +36,7 @@ function SplitDropZone({ onFiles, dragging, setDragging }) {
       <input
         type="file"
         multiple
-        accept=".txt,.csv,.log,text/plain,text/csv"
+        accept="*/*"
         onChange={(event) => handleFiles(event.target.files)}
       />
       <span className="split-drop-icon">
@@ -44,7 +44,7 @@ function SplitDropZone({ onFiles, dragging, setDragging }) {
       </span>
       <span className="split-drop-copy">
         <strong>把大邮箱文件拖到这里</strong>
-        <span>支持多个 TXT/CSV，分割区不会改变原文件。</span>
+        <span>支持拖入任意扩展名文件，分割区不会改变原文件。</span>
         <span className="split-select-link">点击选择文件</span>
       </span>
     </label>

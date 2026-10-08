@@ -1,4 +1,4 @@
-# Cookie 转 JSON 小工具
+# 工作台
 
 ## 功能
 - 把每行一个 cookie 字符串的文本文件，转换成带 `id` / `name` / `cookie` 字段的 JSON 数组
@@ -29,11 +29,30 @@
 
 网页中的“积分接口检测配置”用于填写并导出接口配置；真实的逐条 Cookie 请求由 `credit_stats_scraper.py` 在本机完成，避免浏览器 CORS 和 Cookie 安全策略导致按钮无响应。
 
-## 邮箱文件工作台
+## 邮箱文件处理
 
-仓库新增了邮箱文件处理工具，入口为主页面左侧导航的“邮箱文件”，也可从首页右上角的“邮箱文件工作台”打开；独立页面仍保留在 `email-workbench/`。
+邮箱文件处理工具入口为主页面左侧导航的“邮箱文件”，独立页面仍保留在 `email-workbench/`。
 
 它支持邮箱 TXT/CSV 的合并、去重、固定行数凑整，以及按每个小文件行数进行流式分割。分割会保留原始顺序，支持空行处理、单个分片下载和全部分片下载。主页面通过本地 iframe 嵌入工作台，数据仍只在浏览器本地处理。源代码位于 `email-workbench/source/`。
+
+文件导入入口支持任意扩展名，系统优先按文件内容识别格式。邮箱合并和文件分割也支持拖拽任意扩展名文件。
+
+## Python 接口和数据库
+
+浏览器工作台仍可单文件离线使用；需要 Python 服务和持久化数据库时，在本目录运行：
+
+```bash
+python3 workbench_backend.py
+```
+
+默认接口地址为 `http://127.0.0.1:8787`，数据库文件为 `workbench.sqlite3`。接口包括：
+
+- `GET /api/health`：检查服务是否正常。
+- `POST /api/parse`：按内容解析导入文件。
+- `POST /api/as-convert`：合并邮箱文件和代理文件。
+- `GET/POST/DELETE /api/datasets`：保留数据库数据接口。
+
+数据库使用 Python 标准库 SQLite，后续可以替换 `DatasetRepository`，不会影响接口层。
 
 ## 命令行用法
 

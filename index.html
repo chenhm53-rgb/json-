@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cookie JSON 工作台</title>
+  <title>工作台</title>
   <style>
     :root {
       color-scheme: light;
@@ -1505,6 +1505,12 @@
       cursor: pointer;
     }
 
+    .as-file-picker.dragover,
+    .db-import-drop.dragover {
+      background: #1e5ab5;
+      outline: 3px solid rgba(25, 103, 210, 0.18);
+    }
+
     .as-file-picker input {
       position: absolute;
       inset: 0;
@@ -1686,17 +1692,10 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <div class="brand-mark">CJ</div>
+          <div class="brand-mark">W</div>
           <div>
-            <h1>Cookie JSON 工作台</h1>
-            <p>本地解析、多格式导入、合并去重、导出标准 JSON</p>
+            <h1>工作台</h1>
           </div>
-        </div>
-        <div class="status-strip">
-          <a class="pill" href="email-workbench/">邮箱文件工作台</a>
-          <span class="pill">纯前端运行</span>
-          <span class="pill neutral">数据不上传</span>
-          <span class="pill neutral">单文件可部署</span>
         </div>
       </div>
     </header>
@@ -1712,12 +1711,7 @@
           <button class="nav-button" type="button" data-nav-target="emailPanel" data-nav-title="邮箱文件" data-nav-caption="在当前工作台合并邮箱文件、凑整行数并按行分割。">邮箱文件</button>
           <button class="nav-button" type="button" data-nav-target="asPanel" data-nav-title="AS格式转换" data-nav-caption="上传谷歌邮箱文件和代理文件，按顺序合并为账号--密码--2FA--代理。">AS格式转换</button>
         </div>
-        <div class="nav-group">
-          <div class="nav-label">数据管理</div>
-          <button class="nav-button" type="button" data-nav-target="databasePanel" data-nav-title="本地数据库" data-nav-caption="保存、打开、导入或导出本地数据集。">本地数据库</button>
-          <button class="nav-button" type="button" data-nav-target="pastePanel" data-nav-title="粘贴导入" data-nav-caption="粘贴临时 Cookie、curl 命令或 JSON 片段。">粘贴导入</button>
-          <button class="nav-button" type="button" data-nav-target="settingsPanel" data-nav-title="处理设置" data-nav-caption="调整去重、规范化、来源信息和命名方式。">处理设置</button>
-        </div>
+        <!-- 数据管理导航暂时隐藏；数据库接口和本地存储代码保留。 -->
         <div class="nav-dataset">
           <strong>当前数据集</strong>
           <span id="navDatasetStatus">未选择文件</span>
@@ -1739,15 +1733,15 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">导入文件</h2>
-              <p class="panel-caption">可一次拖入多个文件，自动识别格式。</p>
+              <p class="panel-caption">可一次拖入多个文件，按文件内容自动识别格式。</p>
             </div>
           </div>
           <div class="panel-body">
             <label class="drop-zone" id="dropZone">
               <span class="drop-icon">+</span>
               <strong>点击选择或拖拽文件到这里</strong>
-              <span>支持 .txt .json .csv .tsv .har .cookies 等常见 cookie 数据</span>
-              <input id="fileInput" type="file" multiple accept=".txt,.json,.csv,.tsv,.har,.cookie,.cookies,.log,text/plain,application/json,text/csv">
+              <span>支持任意扩展名；系统按内容识别 TXT、JSON、CSV、TSV、HAR、Netscape 等格式</span>
+              <input id="fileInput" type="file" multiple accept="*/*">
             </label>
             <div class="format-grid" aria-label="支持格式">
               <div class="format-chip"><strong>Cookie 文本</strong><span>每行一个、Cookie:、curl</span></div>
@@ -1802,8 +1796,8 @@
             <label class="drop-zone split-drop-zone" id="splitDropZone">
               <span class="drop-icon">+</span>
               <strong>点击选择或拖拽文件到分割区</strong>
-              <span>仅用于校验与分割，不会自动加入上方转换结果</span>
-              <input id="splitFileInput" type="file" multiple accept=".txt,.json,.csv,.tsv,.har,.cookie,.cookies,.log,text/plain,application/json,text/csv">
+              <span>支持任意扩展名，仅用于校验与分割，不会自动加入上方转换结果</span>
+              <input id="splitFileInput" type="file" multiple accept="*/*">
             </label>
             <div class="toolbar">
               <button class="btn btn-secondary" id="btnSplitChoose" type="button"><span class="btn-icon">+</span>继续添加文件</button>
@@ -1861,9 +1855,9 @@
               <section class="as-file-card">
                 <h3>第一份：谷歌邮箱文件</h3>
                 <p>每行使用 `----` 分隔账号、密码和 2FA。</p>
-                <label class="as-file-picker">
-                  <input id="asGoogleInput" type="file" accept=".txt,.csv,.log,text/plain,text/csv">
-                  选择邮箱文件
+                <label class="as-file-picker as-drop-zone" id="asGoogleDropZone">
+                  <input id="asGoogleInput" type="file" accept="*/*">
+                  点击选择或拖拽邮箱文件
                 </label>
                 <span class="as-file-name" id="asGoogleName">尚未选择文件</span>
               </section>
@@ -1871,9 +1865,9 @@
               <section class="as-file-card">
                 <h3>第二份：代理文件</h3>
                 <p>每行一个代理，例如 `192.217.9.89:35089:U9MC78ih:vacFlgOMD4`。</p>
-                <label class="as-file-picker">
-                  <input id="asProxyInput" type="file" accept=".txt,.csv,.log,text/plain,text/csv">
-                  选择代理文件
+                <label class="as-file-picker as-drop-zone" id="asProxyDropZone">
+                  <input id="asProxyInput" type="file" accept="*/*">
+                  点击选择或拖拽代理文件
                 </label>
                 <span class="as-file-name" id="asProxyName">尚未选择文件</span>
               </section>
@@ -1924,7 +1918,7 @@
           </div>
         </section>
 
-        <section class="panel" id="pastePanel">
+        <section class="panel retained-management-panel" id="pastePanel" hidden>
           <div class="panel-header">
             <div>
               <h2 class="panel-title">粘贴导入</h2>
@@ -1942,7 +1936,7 @@
           </div>
         </section>
 
-        <section class="panel" id="settingsPanel">
+        <section class="panel retained-management-panel" id="settingsPanel" hidden>
           <div class="panel-header">
             <div>
               <h2 class="panel-title">处理设置</h2>
@@ -1998,7 +1992,7 @@
           </div>
         </section>
 
-        <section class="panel" id="databasePanel">
+        <section class="panel retained-management-panel" id="databasePanel" hidden>
           <div class="panel-header">
             <div>
               <h2 class="panel-title">本地数据库</h2>
@@ -2012,9 +2006,9 @@
             </div>
             <div class="toolbar">
               <button class="btn btn-secondary" id="btnExportDb" type="button"><span class="btn-icon">↓</span>导出数据库</button>
-              <label class="btn btn-ghost" style="position:relative; overflow:hidden;">
+              <label class="btn btn-ghost db-import-drop" style="position:relative; overflow:hidden;">
                 <span class="btn-icon">↑</span>导入数据库
-                <input id="dbImportInput" type="file" accept="application/json" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                <input id="dbImportInput" type="file" accept="*/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
               </label>
               <button class="btn btn-ghost" id="btnRefreshDb" type="button"><span class="btn-icon">↻</span>刷新列表</button>
             </div>
@@ -2183,6 +2177,8 @@
       splitChunkList: document.getElementById('splitChunkList'),
       asGoogleInput: document.getElementById('asGoogleInput'),
       asProxyInput: document.getElementById('asProxyInput'),
+      asGoogleDropZone: document.getElementById('asGoogleDropZone'),
+      asProxyDropZone: document.getElementById('asProxyDropZone'),
       asGoogleName: document.getElementById('asGoogleName'),
       asProxyName: document.getElementById('asProxyName'),
       btnAsConvert: document.getElementById('btnAsConvert'),
@@ -2198,6 +2194,7 @@
       btnRefreshDb: document.getElementById('btnRefreshDb'),
       dbNameInput: document.getElementById('dbNameInput'),
       dbImportInput: document.getElementById('dbImportInput'),
+      dbImportDrop: document.querySelector('.db-import-drop'),
       dbList: document.getElementById('dbList'),
       dedupeToggle: document.getElementById('dedupeToggle'),
       normalizeToggle: document.getElementById('normalizeToggle'),
@@ -3215,6 +3212,23 @@
       showToast('AS格式转换已清空');
     }
 
+    function bindFileDropZone(zone, onFiles) {
+      if (!zone) return;
+      zone.addEventListener('dragover', event => {
+        event.preventDefault();
+        zone.classList.add('dragover');
+      });
+      zone.addEventListener('dragleave', event => {
+        if (!zone.contains(event.relatedTarget)) zone.classList.remove('dragover');
+      });
+      zone.addEventListener('drop', event => {
+        event.preventDefault();
+        zone.classList.remove('dragover');
+        const file = Array.from(event.dataTransfer.files || [])[0];
+        if (file) onFiles(file);
+      });
+    }
+
     async function checkAndSplitFiles() {
       if (!state.splitFiles.length) {
         showToast('请先选择待分割文件');
@@ -4192,6 +4206,8 @@
     els.asProxyInput.addEventListener('change', event => {
       setAsFile('proxy', event.target.files && event.target.files[0]);
     });
+    bindFileDropZone(els.asGoogleDropZone, file => setAsFile('google', file));
+    bindFileDropZone(els.asProxyDropZone, file => setAsFile('proxy', file));
     els.btnAsConvert.addEventListener('click', () => {
       convertAsFiles();
     });
@@ -4232,6 +4248,9 @@
       const file = event.target.files && event.target.files[0];
       event.target.value = '';
       if (!file) return;
+      importDatabaseBackup(file).catch(error => showToast(error.message || '导入失败'));
+    });
+    bindFileDropZone(els.dbImportDrop, file => {
       importDatabaseBackup(file).catch(error => showToast(error.message || '导入失败'));
     });
     els.searchInput.addEventListener('input', applyFilters);

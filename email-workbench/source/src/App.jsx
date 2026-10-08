@@ -171,12 +171,12 @@ function DropZone({ onFiles }) {
       </div>
       <div>
         <h2>拖入邮箱文件</h2>
-        <p>支持多个 TXT/CSV，默认按 `邮箱----密码----GUID----token----辅助邮箱----尾码` 合并。</p>
+        <p>支持拖入任意扩展名文件，默认按 `邮箱----密码----GUID----token----辅助邮箱----尾码` 合并。</p>
         <label className="file-picker-button">
           <input
             type="file"
             multiple
-            accept=".txt,.csv,.log,text/plain,text/csv"
+            accept="*/*"
             onChange={(event) => handleFiles(event.target.files)}
           />
           选择文件
