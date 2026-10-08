@@ -1278,10 +1278,26 @@
 
     #apiPanel,
     #splitPanel,
+    #emailPanel,
     #pastePanel,
     #settingsPanel,
     #databasePanel {
       scroll-margin-top: 24px;
+    }
+
+    .email-panel-body {
+      padding: 0;
+      overflow: hidden;
+      background: #f5f7fb;
+    }
+
+    .email-panel-frame {
+      display: block;
+      width: 100%;
+      height: max(820px, calc(100vh - 250px));
+      min-height: 820px;
+      border: 0;
+      background: #f5f7fb;
     }
 
     @media (max-width: 1180px) and (min-width: 981px) {
@@ -1419,6 +1435,11 @@
       .api-grid {
         grid-template-columns: 1fr;
       }
+
+      .email-panel-frame {
+        height: 1120px;
+        min-height: 1120px;
+      }
     }
   </style>
 </head>
@@ -1450,6 +1471,7 @@
           <button class="nav-button" type="button" data-nav-target="apiPanel" data-nav-title="积分检测" data-nav-caption="逐条携带 Cookie 调用接口，统计真实积分。">积分检测</button>
           <button class="nav-button" type="button" data-nav-target="resultPanel" data-nav-title="统计结果" data-nav-caption="查看转换结果、积分分组和接口检测明细。">统计结果</button>
           <button class="nav-button" type="button" data-nav-target="splitPanel" data-nav-title="批量分割" data-nav-caption="先检查文件格式，再按记录数拆成多份 JSON。">批量分割</button>
+          <button class="nav-button" type="button" data-nav-target="emailPanel" data-nav-title="邮箱文件" data-nav-caption="在当前工作台合并邮箱文件、凑整行数并按行分割。">邮箱文件</button>
         </div>
         <div class="nav-group">
           <div class="nav-label">数据管理</div>
@@ -1564,6 +1586,23 @@
               <div class="split-empty">尚未选择需要校验的文件。</div>
             </div>
             <div class="split-list" id="splitChunkList"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="emailPanel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">邮箱文件工作台</h2>
+              <p class="panel-caption">当前页面内直接处理邮箱 TXT/CSV，支持合并、凑整、分割和下载。</p>
+            </div>
+          </div>
+          <div class="email-panel-body">
+            <iframe
+              class="email-panel-frame"
+              src="email-workbench/"
+              title="邮箱文件工作台"
+              loading="lazy"
+            ></iframe>
           </div>
         </section>
 
