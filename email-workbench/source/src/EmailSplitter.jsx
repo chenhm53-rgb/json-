@@ -22,11 +22,17 @@ function SplitDropZone({ onFiles, dragging, setDragging }) {
   return (
     <label
       className={`split-drop-zone ${dragging ? 'is-dragging' : ''}`}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        setDragging(true);
+      }}
       onDragOver={(event) => {
         event.preventDefault();
         setDragging(true);
       }}
-      onDragLeave={() => setDragging(false)}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+      }}
       onDrop={(event) => {
         event.preventDefault();
         setDragging(false);
@@ -37,7 +43,10 @@ function SplitDropZone({ onFiles, dragging, setDragging }) {
         type="file"
         multiple
         accept="*/*"
-        onChange={(event) => handleFiles(event.target.files)}
+        onChange={(event) => {
+          handleFiles(event.target.files);
+          event.target.value = '';
+        }}
       />
       <span className="split-drop-icon">
         <UploadCloud size={26} />

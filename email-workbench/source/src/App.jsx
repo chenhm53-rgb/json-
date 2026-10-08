@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Download,
@@ -101,46 +101,58 @@ function parseLine(rawLine, options, fileName, lineNumber) {
 }
 
 async function processFile(fileItem, options, emitProgress, emitLine) {
-  const decoder = new TextDecoder(options.encoding);
-  const reader = fileItem.file.stream().getReader();
-  let buffer = '';
-  let bytesRead = 0;
-  let lineNumber = 0;
+  const emitText = (text) => {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (lines[lines.length - 1] === '') lines.pop();
+    lines.forEach((line, index) => {
+      emitLine(parseLine(line, options, fileItem.file.name, index + 1));
+    });
+    emitProgress(fileItem.id, { status: 'done', progress: 100, rowsSeen: lines.length });
+  };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytesRead += value.byteLength;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+  try {
+    const decoder = new TextDecoder(options.encoding);
+    const reader = fileItem.file.stream().getReader();
+    let buffer = '';
+    let bytesRead = 0;
+    let lineNumber = 0;
 
-    for (const line of lines) {
-      lineNumber += 1;
-      emitLine(parseLine(line, options, fileItem.file.name, lineNumber));
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytesRead += value.byteLength;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        lineNumber += 1;
+        emitLine(parseLine(line, options, fileItem.file.name, lineNumber));
+      }
+
+      emitProgress(fileItem.id, {
+        status: 'reading',
+        progress: Math.min(99, Math.round((bytesRead / fileItem.file.size) * 100)),
+        rowsSeen: lineNumber,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
-    emitProgress(fileItem.id, {
-      status: 'reading',
-      progress: Math.min(99, Math.round((bytesRead / fileItem.file.size) * 100)),
-      rowsSeen: lineNumber,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const finalText = decoder.decode();
+    if (finalText) buffer += finalText;
+    if (buffer) {
+      lineNumber += 1;
+      emitLine(parseLine(buffer, options, fileItem.file.name, lineNumber));
+    }
+    emitProgress(fileItem.id, { status: 'done', progress: 100, rowsSeen: lineNumber });
+  } catch (error) {
+    if (fileItem.file.arrayBuffer) {
+      const text = new TextDecoder(options.encoding).decode(await fileItem.file.arrayBuffer());
+      emitText(text);
+      return;
+    }
+    throw error;
   }
-
-  const finalText = decoder.decode();
-  if (finalText) buffer += finalText;
-  if (buffer) {
-    lineNumber += 1;
-    emitLine(parseLine(buffer, options, fileItem.file.name, lineNumber));
-  }
-
-  emitProgress(fileItem.id, {
-    status: 'done',
-    progress: 100,
-    rowsSeen: lineNumber,
-  });
 }
 
 function DropZone({ onFiles }) {
@@ -154,11 +166,17 @@ function DropZone({ onFiles }) {
   return (
     <section
       className={`drop-zone ${dragging ? 'is-dragging' : ''}`}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        setDragging(true);
+      }}
       onDragOver={(event) => {
         event.preventDefault();
         setDragging(true);
       }}
-      onDragLeave={() => setDragging(false)}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+      }}
       onDrop={(event) => {
         event.preventDefault();
         setDragging(false);
@@ -176,7 +194,10 @@ function DropZone({ onFiles }) {
             type="file"
             multiple
             accept="*/*"
-            onChange={(event) => handleFiles(event.target.files)}
+            onChange={(event) => {
+              handleFiles(event.target.files);
+              event.target.value = '';
+            }}
           />
           选择文件
         </label>
@@ -237,6 +258,16 @@ function App() {
   const canMerge = files.length > 0 && separator.length > 0 && hasValidTarget && !busy;
 
   const totalBytes = useMemo(() => files.reduce((sum, item) => sum + item.file.size, 0), [files]);
+
+  useEffect(() => {
+    const preventBrowserDrop = (event) => event.preventDefault();
+    window.addEventListener('dragover', preventBrowserDrop);
+    window.addEventListener('drop', preventBrowserDrop);
+    return () => {
+      window.removeEventListener('dragover', preventBrowserDrop);
+      window.removeEventListener('drop', preventBrowserDrop);
+    };
+  }, []);
 
   const addFiles = (newFiles) => {
     const next = newFiles.map((file) => ({
@@ -376,7 +407,10 @@ function App() {
         setProgressText(`合并完成：${formatNumber(stats.valid)} 行可导出`);
       }
     } catch (error) {
-      setProgressText(`处理失败：${error.message}`);
+      const detail = /permission|权限|could not be read|network error/i.test(error.message || '')
+        ? '文件被系统保护，请先把微信临时文件另存到桌面或下载文件夹后再拖入'
+        : error.message;
+      setProgressText(`处理失败：${detail}`);
     } finally {
       setBusy(false);
     }
